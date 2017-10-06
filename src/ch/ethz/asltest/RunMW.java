@@ -16,12 +16,14 @@ public class RunMW {
         // Parse and prepare arguments
         // -----------------------------------------------------------------------------
 
-        parseArguments(args);
+        //parseArguments(args);
 
         // -----------------------------------------------------------------------------
         // Start the Middleware
         // -----------------------------------------------------------------------------
-
+        myIp ="";
+        myPort = 6000;
+        numThreadsPTP = 8;
         new MyMiddleware(myIp, myPort, mcAddresses, numThreadsPTP, readSharded).run();
 
     }
