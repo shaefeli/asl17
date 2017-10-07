@@ -22,7 +22,7 @@ public class RunMW {
         // Start the Middleware
         // -----------------------------------------------------------------------------
         myIp ="";
-        myPort = 6000;
+        myPort = 6800;
         numThreadsPTP = 8;
         new MyMiddleware(myIp, myPort, mcAddresses, numThreadsPTP, readSharded).run();
 

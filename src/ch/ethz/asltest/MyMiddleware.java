@@ -33,13 +33,11 @@ public class MyMiddleware implements Runnable{
 
                 //Wait for a client to create a TCP connection
                 Socket clientSocket = welcomeSocket.accept();
+                System.out.println(clientSocket.toString());
                 System.out.println("Just connected to " + clientSocket.getRemoteSocketAddress());
 
-                // Receive TCP packet and give it to the queue Handler
-                BufferedReader din = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                String message = din.readLine();
-                System.out.println("Received: " + message);
-                queueHandler.putToQueue(message,clientSocket);
+                //Give socket to handler
+                new Thread(new SocketHandler(clientSocket)).start();
 
 
             }catch (IOException e1) {

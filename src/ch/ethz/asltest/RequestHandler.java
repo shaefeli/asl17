@@ -18,6 +18,11 @@ public class RequestHandler implements Runnable{
     public void run(){
         Request request = new Request(message.toString());
         System.out.println(request.toString());
+        try{
+            clientSocket.setKeepAlive(true);
+        }catch(Exception e){
+
+        }
 
         //if multi get => disperse it correctly (other class)
         //Send request to servers
