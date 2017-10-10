@@ -1,7 +1,5 @@
 package ch.ethz.asltest;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.concurrent.*;
 
@@ -13,17 +11,16 @@ public class QueueHandler {
 
     public QueueHandler(int numThreadsPTP){
         workerThreadPool = new ThreadPoolExecutor(numThreadsPTP,numThreadsPTP,Config.keepAliveTime, TimeUnit.SECONDS,new LinkedBlockingQueue<>());
-        workerThreadPool.setThreadFactory(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable runnable) {
-                return new RequestHandlerInitializer(runnable);
-            }
-        });
     }
 
     public static void putToQueue(String message, Socket clientSocket){
         // Receive TCP packet and give it to the queue Handler
-        workerThreadPool.execute(new RequestHandler(message, clientSocket));
+        if(!message.equals("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")) {
+            workerThreadPool.execute(new RequestHandler(message, clientSocket));
+        }
+        else{
+            System.out.println("Message di mierda");
+        }
     }
     public int sizeOfQueue(){
         return workerThreadPool.getQueue().size();
