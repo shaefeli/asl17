@@ -13,14 +13,12 @@ public class QueueHandler {
         workerThreadPool = new ThreadPoolExecutor(numThreadsPTP,numThreadsPTP,Config.keepAliveTime, TimeUnit.SECONDS,new LinkedBlockingQueue<>());
     }
 
-    public static void putToQueue(String message, Socket clientSocket){
+    public static void putToQueue(Request request, Socket clientSocket){
         // Receive TCP packet and give it to the queue Handler
-        if(!message.equals("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")) {
-            workerThreadPool.execute(new RequestHandler(message, clientSocket));
-        }
-        else{
-            System.out.println("Message di mierda");
-        }
+
+        workerThreadPool.execute(new RequestHandler(request, clientSocket));
+
+
     }
     public int sizeOfQueue(){
         return workerThreadPool.getQueue().size();
