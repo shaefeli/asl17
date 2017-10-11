@@ -1,5 +1,8 @@
 package ch.ethz.asltest;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by Simon on 06.10.17.
  */
@@ -7,12 +10,15 @@ public class Request {
 
     //code 1: SET
     //code 2: GET
-    //code 3: MULTI-GET
-    //code 4: INIT
+    //code 3: INIT
+    //code 4: MULTI GET
     //code 5: SET VALUE
     //code 0: UNKNOWN
     public int requestType =0;
     public String restOfMessage = "";
+
+    //Only in the case of a multi get
+    public List<String> keys = new ArrayList<>();
 
     public Request(String message){
         parseMessage(message);
@@ -26,6 +32,13 @@ public class Request {
         this.restOfMessage = restMessage;
         this.requestType = requestType;
     }
+
+    public Request(int requestType, String restMessage, List<String> keys){
+        this.restOfMessage = restMessage;
+        this.requestType = requestType;
+        this.keys = keys;
+    }
+
     private Request parseMessage(String message){
         StringBuilder requestTypeBuilder = new StringBuilder();
         int nrSpaces = 0;
@@ -50,15 +63,17 @@ public class Request {
                 else if(reqType.equals("get")){
                     requestType = 2;
                     restOfMessage = restMessage;
-                    return new Request(requestType,restMessage);
-                }
-                else if(reqType.equals("gets")){
-                    requestType = 3;
-                    restOfMessage = restMessage;
-                    return new Request(requestType,restMessage);
+                    if(isMultiget(restMessage)){
+                        requestType = 4;
+                        List<String> keys = extractKeys(restMessage);
+                        return new Request(requestType, restMessage, keys);
+                    }
+                    else{
+                        return new Request(requestType,restMessage);
+                    }
                 }
                 else if(reqType.equals("init")){
-                    requestType = 4;
+                    requestType = 3;
                     restOfMessage = restMessage;
                     return new Request(requestType);
                 }
@@ -71,6 +86,13 @@ public class Request {
         }
         return new Request(0);
     }
+    private boolean isMultiget(String restMessage){
+        return false;
+    }
+    //Gets all keys from the multi get and puts into field keys
+    private List<String> extractKeys(String restMessage){
+        return null;
+    }
     public String toString(){
         switch(requestType){
             case 1:
@@ -78,11 +100,9 @@ public class Request {
             case 2:
                 return "get "+restOfMessage;
             case 3:
-                return "gets "+restOfMessage;
-            case 4:
                 return "init";
-            case 5:
-                return "";
+            case 4:
+                return "get "+restOfMessage;
             default:
                 return "UNKNOWN";
 

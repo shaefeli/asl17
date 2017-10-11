@@ -3,7 +3,7 @@ package ch.ethz.asltest;
 import java.util.List;
 
 /**
- * Created by simon on 06.10.17.
+ * Created by Simon on 06.10.17.
  */
 public class Config {
     public static final int verboseLevel = 3;

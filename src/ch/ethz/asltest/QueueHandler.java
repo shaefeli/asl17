@@ -4,7 +4,7 @@ import java.net.Socket;
 import java.util.concurrent.*;
 
 /**
- * Created by simon on 06.10.17.
+ * Created by Simon on 06.10.17.
  */
 public class QueueHandler {
     public static ThreadPoolExecutor workerThreadPool;
