@@ -24,6 +24,7 @@ public class RunMW {
         myIp ="";
         mcAddresses = new ArrayList<>();
         mcAddresses.add("127.0.0.1:3000");
+        mcAddresses.add("127.0.0.1:3001");
         myPort = 6800;
         numThreadsPTP = 8;
         Config.nrServers = mcAddresses.size();

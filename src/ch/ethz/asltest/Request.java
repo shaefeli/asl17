@@ -16,8 +16,10 @@ public class Request {
     public int requestType =0;
     public String restOfMessage = "";
 
-    //Only in the case of a multi get
+    //Only in the case of a multi get and get
     public List<String> keys = new ArrayList<>();
+
+    //On
 
     public Request(String message){
         parseMessage(message);

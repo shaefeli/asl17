@@ -14,8 +14,7 @@ public class SocketHandler implements Runnable{
     }
     public void run(){
         while(Config.middlewareOn){
-            String userInput="";
-            int i=0;
+            String userInput;
             try{
                 BufferedReader din = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
@@ -34,7 +33,8 @@ public class SocketHandler implements Runnable{
                     }
 
                     else if(request.requestType == 0 && !completeMessagereceived){
-                        storedSetRequest.restOfMessage = storedSetRequest.restOfMessage+"\n"+userInput;
+                        storedSetRequest.restOfMessage = storedSetRequest.restOfMessage +"\n"+userInput+"\r";
+                        System.out.println(storedSetRequest.restOfMessage);
                         completeMessagereceived = true;
                         isSetRequest = true;
                     }

@@ -21,6 +21,12 @@ public class MyMiddleware implements Runnable{
         }
         Config.mcAdresses = mcAddresses;
         queueHandler = new QueueHandler(numThreadsPTP);
+
+        //Initialize every thread
+        Request request = new Request(3);
+        for(int i = 0; i<numThreadsPTP;i++){
+            QueueHandler.putToQueue(request,new Socket());
+        }
     }
     public void run(){
         while (Config.middlewareOn) {
@@ -43,7 +49,6 @@ public class MyMiddleware implements Runnable{
         }
         this.teardown();
     }
-
 
     public void teardown() {
         if (welcomeSocket != null) {

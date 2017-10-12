@@ -116,6 +116,7 @@ public class RequestHandler implements Runnable{
 
     }
     private void handleSet(Request request){
+
         for(int i=0; i<nrServers;i++) {
             Socket serverSocket = getSockets().get(i);
             try {
@@ -125,9 +126,10 @@ public class RequestHandler implements Runnable{
                 BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
                 String serverInput = "";
                 //Loop until you get an answer
-                while ((serverInput = din.readLine()) == null);
+                while ((serverInput = din.readLine()) == null){this.wait();}
+                System.out.println(serverInput);
                 PrintWriter outToClient = new PrintWriter(clientSocket.getOutputStream(), true);
-                outToClient.println(serverInput);
+                outToClient.println(serverInput+"\r");
 
             }catch(Exception e){
                 System.out.println("Impossible to write in socket");
@@ -145,9 +147,9 @@ public class RequestHandler implements Runnable{
             BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
             String serverInput = "";
             //Loop until you get an answer
-            while ((serverInput = din.readLine()) == null);
+            while ((serverInput = din.readLine()) == null){this.wait();}
             PrintWriter outToClient = new PrintWriter(clientSocket.getOutputStream(), true);
-            outToClient.println(serverInput);
+            outToClient.println(serverInput+"\r");
         }catch(Exception e){
             System.out.println("Impossible to open outputstream");
         }
@@ -162,9 +164,9 @@ public class RequestHandler implements Runnable{
             BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
             String serverInput = "";
             //Loop until you get an answer
-            while ((serverInput = din.readLine()) == null);
+            while ((serverInput = din.readLine()) == null){this.wait();}
             PrintWriter outToClient = new PrintWriter(clientSocket.getOutputStream(), true);
-            outToClient.println(serverInput);
+            outToClient.println(serverInput+"\r");
         }catch(Exception e){
             System.out.println("Impossible to open outputstream");
         }
