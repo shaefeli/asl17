@@ -26,26 +26,26 @@ public class SocketHandler implements Runnable{
                 while ((userInput = din.readLine()) != null) {
                     boolean isSetRequest = false;
                     Request request = new Request(userInput);
-                    System.out.println("Line received : "+request.toString());
+                    //System.out.println("Line received : "+request.toString());
                     if(request.requestType == 1){
-                        System.out.println("Request type set");
+                        //System.out.println("Request type set");
                         storedSetRequest = new Request(userInput);
                         completeMessagereceived = false;
                     }
 
                     else if(request.requestType == 0 && !completeMessagereceived){
-                        storedSetRequest.restOfMessage = storedSetRequest.restOfMessage+"\r\n"+userInput+"\r\n";
+                        storedSetRequest.restOfMessage = storedSetRequest.restOfMessage+"\n"+userInput;
                         completeMessagereceived = true;
                         isSetRequest = true;
                     }
 
                     if(completeMessagereceived){
                         if(isSetRequest){
-                            System.out.println("Request to queueHandler: "+storedSetRequest.toString());
+                            //System.out.println("Request to queueHandler: "+storedSetRequest.toString());
                             QueueHandler.putToQueue(storedSetRequest,clientSocket);
                         }
                         else{
-                            System.out.println("Request to queueHandler: "+request.toString());
+                            //System.out.println("Request to queueHandler: "+request.toString());
                             QueueHandler.putToQueue(request,clientSocket);
                         }
 

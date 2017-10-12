@@ -10,4 +10,5 @@ public class Config {
     public static boolean middlewareOn = true;
     public static final int keepAliveTime = 1000;
     public static  List<String> mcAdresses ;
+    public static int nrServers = 0;
 }

@@ -7,7 +7,6 @@ import java.util.List;
  * Created by Simon on 06.10.17.
  */
 public class Request {
-
     //code 1: SET
     //code 2: GET
     //code 3: INIT
@@ -63,9 +62,9 @@ public class Request {
                 else if(reqType.equals("get")){
                     requestType = 2;
                     restOfMessage = restMessage;
-                    if(isMultiget(restMessage)){
+                    keys = extractKeys(restMessage);
+                    if(keys.size() >1){
                         requestType = 4;
-                        List<String> keys = extractKeys(restMessage);
                         return new Request(requestType, restMessage, keys);
                     }
                     else{
@@ -86,12 +85,24 @@ public class Request {
         }
         return new Request(0);
     }
-    private boolean isMultiget(String restMessage){
-        return false;
-    }
-    //Gets all keys from the multi get and puts into field keys
+
+    //Gets all keys from the multi get / get and puts into field keys
     private List<String> extractKeys(String restMessage){
-        return null;
+        System.out.println(restMessage);
+        List<String> keys = new ArrayList<>();
+        StringBuilder keyBuilder = new StringBuilder();
+        for(int i=0; i< restMessage.length(); i++){
+            char readChar = restMessage.charAt(i);
+            if(readChar == ' ' || i == restMessage.length()-1){
+                System.out.println(keyBuilder.toString());
+                keys.add(keyBuilder.toString());
+                keyBuilder = new StringBuilder();
+            }
+            else{
+                keyBuilder.append(readChar);
+            }
+        }
+        return keys;
     }
     public String toString(){
         switch(requestType){

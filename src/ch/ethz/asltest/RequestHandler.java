@@ -1,5 +1,8 @@
 package ch.ethz.asltest;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,12 +14,11 @@ import java.util.List;
 public class RequestHandler implements Runnable{
     private Request request;
     private Socket clientSocket;
+    private int nrServers = Config.nrServers;
     private static final ThreadLocal<List<Socket>> initializedServerSockets = new ThreadLocal<List<Socket>>(){
         @Override
         public List<Socket> initialValue(){
             List<Socket> serverSockets = new ArrayList<>();
-
-
             for(String mcAdress: Config.mcAdresses){
                 int port = getPort(mcAdress);
                 String hostname = getHostname(mcAdress);
@@ -85,16 +87,87 @@ public class RequestHandler implements Runnable{
     }
 
     public void run(){
-        long threadId = Thread.currentThread().getId();
+        //long threadId = Thread.currentThread().getId();
         //System.out.println("Thread id:"+threadId);
         getSockets();
-        System.out.println(request.toString());
+        //System.out.println(request.toString());
+        if(request.requestType == 4){
+            handleMultiGet(request);
+        }
 
-        //if multi get => disperse it correctly (other class)
-        //Send request to servers
-        //Wait for answer
-        //Interpret the answer
-        //Send back to client via the socket
+        else if(request.requestType == 1){
+            handleSet(request);
+        }
+        else if(request.requestType == 2){
+            handleGet(request);
+        }
+        else if(request.requestType == 0){
+            try{
+                PrintWriter outToClient = new PrintWriter(clientSocket.getOutputStream(), true);
+                outToClient.println("UNKNOWN");
+            }catch(Exception e){
+                System.out.println("Impossible to get outputstream");
+            }
+
+        }
+        //If request is init (3) do nothing
+
+
+
+    }
+    private void handleSet(Request request){
+        for(int i=0; i<nrServers;i++) {
+            Socket serverSocket = getSockets().get(i);
+            try {
+                PrintWriter out = new PrintWriter(serverSocket.getOutputStream(), true);
+                System.out.println(request.toString());
+                out.println(request.toString());
+                BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+                String serverInput = "";
+                //Loop until you get an answer
+                while ((serverInput = din.readLine()) == null);
+                PrintWriter outToClient = new PrintWriter(clientSocket.getOutputStream(), true);
+                outToClient.println(serverInput);
+
+            }catch(Exception e){
+                System.out.println("Impossible to write in socket");
+            }
+            System.out.println("this is i:"+i);
+            System.out.println("nr of servers: "+nrServers);
+        }
+    }
+    private void handleGet(Request request){
+        Socket serverSocket = getSockets().get(0);
+        try{
+            PrintWriter out = new PrintWriter(serverSocket.getOutputStream(), true);
+            System.out.println(request.toString());
+            out.println(request.toString());
+            BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+            String serverInput = "";
+            //Loop until you get an answer
+            while ((serverInput = din.readLine()) == null);
+            PrintWriter outToClient = new PrintWriter(clientSocket.getOutputStream(), true);
+            outToClient.println(serverInput);
+        }catch(Exception e){
+            System.out.println("Impossible to open outputstream");
+        }
+
+    }
+    private void handleMultiGet(Request request){
+        Socket serverSocket = getSockets().get(0);
+        try{
+            PrintWriter out = new PrintWriter(serverSocket.getOutputStream(), true);
+            System.out.println(request.toString());
+            out.println(request.toString());
+            BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+            String serverInput = "";
+            //Loop until you get an answer
+            while ((serverInput = din.readLine()) == null);
+            PrintWriter outToClient = new PrintWriter(clientSocket.getOutputStream(), true);
+            outToClient.println(serverInput);
+        }catch(Exception e){
+            System.out.println("Impossible to open outputstream");
+        }
     }
     private static List<Socket> getSockets(){
         return initializedServerSockets.get();
