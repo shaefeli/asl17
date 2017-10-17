@@ -16,8 +16,11 @@ public class MyMiddleware implements Runnable{
         try{
             welcomeSocket = new ServerSocket(port);
         } catch(Exception e) {
-            System.out.println("Failed to create initial Server Socket");
-            e.printStackTrace();
+            if(Config.verboseLevel>0){
+                System.err.println("Failed to create initial Server Socket");
+                e.printStackTrace();
+            }
+
         }
         Config.mcAdresses = mcAddresses;
         queueHandler = new QueueHandler(numThreadsPTP);
@@ -31,20 +34,22 @@ public class MyMiddleware implements Runnable{
     public void run(){
         while (Config.middlewareOn) {
             try {
-                System.out.println("Waiting for client on port " +
-                        welcomeSocket.getLocalPort() + "...");
+                //System.out.println("Waiting for client on port " +welcomeSocket.getLocalPort() + "...");
 
                 //Wait for a client to create a TCP connection
                 Socket clientSocket = welcomeSocket.accept();
                 System.out.println(clientSocket.toString());
-                System.out.println("Just connected to " + clientSocket.getRemoteSocketAddress());
+                //System.out.println("Just connected to " + clientSocket.getRemoteSocketAddress());
 
                 //Give socket to handler
                 new Thread(new SocketHandler(clientSocket)).start();
 
 
             }catch (IOException e1) {
-                System.out.println("Connection to client impossible");
+                if(Config.verboseLevel>0){
+                    System.err.println("Connection to client impossible");
+                }
+
             }
         }
         this.teardown();
@@ -55,7 +60,9 @@ public class MyMiddleware implements Runnable{
             try {
                 welcomeSocket.close();
             }catch(Exception e){
-                e.printStackTrace();
+                if(Config.verboseLevel>0){
+                    e.printStackTrace();
+                }
             }
             welcomeSocket = null;
         }

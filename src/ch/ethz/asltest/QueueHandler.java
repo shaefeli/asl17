@@ -20,7 +20,7 @@ public class QueueHandler {
 
 
     }
-    public int sizeOfQueue(){
+    public static int sizeOfQueue(){
         return workerThreadPool.getQueue().size();
     }
 }

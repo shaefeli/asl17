@@ -90,13 +90,13 @@ public class Request {
 
     //Gets all keys from the multi get / get and puts into field keys
     private List<String> extractKeys(String restMessage){
-        System.out.println(restMessage);
+        //System.out.println(restMessage);
         List<String> keys = new ArrayList<>();
         StringBuilder keyBuilder = new StringBuilder();
         for(int i=0; i< restMessage.length(); i++){
             char readChar = restMessage.charAt(i);
             if(readChar == ' ' || i == restMessage.length()-1){
-                System.out.println(keyBuilder.toString());
+                //System.out.println(keyBuilder.toString());
                 keys.add(keyBuilder.toString());
                 keyBuilder = new StringBuilder();
             }

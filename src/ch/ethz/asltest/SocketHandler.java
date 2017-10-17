@@ -34,12 +34,13 @@ public class SocketHandler implements Runnable{
 
                     else if(request.requestType == 0 && !completeMessagereceived){
                         storedSetRequest.restOfMessage = storedSetRequest.restOfMessage +"\n"+userInput+"\r";
-                        System.out.println(storedSetRequest.restOfMessage);
+                        //System.out.println(storedSetRequest.restOfMessage);
                         completeMessagereceived = true;
                         isSetRequest = true;
                     }
 
                     if(completeMessagereceived){
+                        //System.out.println(QueueHandler.sizeOfQueue());
                         if(isSetRequest){
                             //System.out.println("Request to queueHandler: "+storedSetRequest.toString());
                             QueueHandler.putToQueue(storedSetRequest,clientSocket);

@@ -13,6 +13,7 @@ import java.util.List;
 //The request handler is one working thread
 public class RequestHandler implements Runnable{
     private Request request;
+    private static int i = 0;
     private Socket clientSocket;
     private int nrServers = Config.nrServers;
     private static final ThreadLocal<List<Socket>> initializedServerSockets = new ThreadLocal<List<Socket>>(){
@@ -27,7 +28,7 @@ public class RequestHandler implements Runnable{
                 try{
                     Socket serverSocket = new Socket(hostname, port);
                     serverSockets.add(serverSocket);
-                    System.out.println("okay");
+                    //System.out.println("okay");
                 }catch(Exception e){
                     System.out.println("Failed to reach "+hostname+" , did you put the ip ? ");
                 }
@@ -116,26 +117,32 @@ public class RequestHandler implements Runnable{
 
     }
     private void handleSet(Request request){
-
+        //For now we jsut assume that the stored command to all server is the result of the last stored
+        String resultForAll = "";
         for(int i=0; i<nrServers;i++) {
             Socket serverSocket = getSockets().get(i);
             try {
                 PrintWriter out = new PrintWriter(serverSocket.getOutputStream(), true);
-                System.out.println(request.toString());
+                //System.out.println(request.toString());
                 out.println(request.toString());
                 BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
                 String serverInput = "";
                 //Loop until you get an answer
                 while ((serverInput = din.readLine()) == null){this.wait();}
-                System.out.println(serverInput);
-                PrintWriter outToClient = new PrintWriter(clientSocket.getOutputStream(), true);
-                outToClient.println(serverInput+"\r");
+                //System.out.println(serverInput);
+                resultForAll = serverInput;
 
             }catch(Exception e){
                 System.out.println("Impossible to write in socket");
             }
-            System.out.println("this is i:"+i);
-            System.out.println("nr of servers: "+nrServers);
+            //System.out.println("this is i:"+i);
+            //System.out.println("nr of servers: "+nrServers);
+        }
+        try {
+            PrintWriter outToClient = new PrintWriter(clientSocket.getOutputStream(), true);
+            outToClient.println(resultForAll + "\r");
+        }catch(Exception e){
+
         }
     }
     private void handleGet(Request request){
@@ -145,11 +152,19 @@ public class RequestHandler implements Runnable{
             System.out.println(request.toString());
             out.println(request.toString());
             BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
-            String serverInput = "";
+            String newLine = "";
             //Loop until you get an answer
-            while ((serverInput = din.readLine()) == null){this.wait();}
+            while ((newLine = din.readLine()) == null){this.wait();}
             PrintWriter outToClient = new PrintWriter(clientSocket.getOutputStream(), true);
-            outToClient.println(serverInput+"\r");
+            System.out.println(newLine);
+            outToClient.println(newLine+"\r");
+            while(!newLine.equals("END")){
+
+                newLine = din.readLine();
+                System.out.println(newLine);
+                outToClient.println(newLine+"\r");
+            }
+
         }catch(Exception e){
             System.out.println("Impossible to open outputstream");
         }
@@ -159,7 +174,7 @@ public class RequestHandler implements Runnable{
         Socket serverSocket = getSockets().get(0);
         try{
             PrintWriter out = new PrintWriter(serverSocket.getOutputStream(), true);
-            System.out.println(request.toString());
+            //System.out.println(request.toString());
             out.println(request.toString());
             BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
             String serverInput = "";
