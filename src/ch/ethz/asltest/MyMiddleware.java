@@ -1,71 +1,85 @@
 package ch.ethz.asltest;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by Simon on 29.09.17.
  */
 public class MyMiddleware implements Runnable{
-    private ServerSocket welcomeSocket;
-    private QueueHandler queueHandler;
+    QueueHandler queueHandler;
+    private Selector connectionSelector;
+    private ServerSocketChannel welcomeSocket;
     public MyMiddleware(String ip, int port, List<String> mcAddresses, int numThreadsPTP, boolean readSharded){
-
         try{
-            welcomeSocket = new ServerSocket(port);
-        } catch(Exception e) {
-            if(Config.verboseLevel>0){
-                System.err.println("Failed to create initial Server Socket");
-                e.printStackTrace();
-            }
+            connectionSelector = Selector.open();
+            welcomeSocket = ServerSocketChannel.open();
+            InetSocketAddress serverAdress = new InetSocketAddress(ip,port);
+            welcomeSocket.bind(serverAdress);
+            welcomeSocket.configureBlocking(false);
+            int ops = welcomeSocket.validOps();
+            welcomeSocket.register(connectionSelector,ops,null);
 
+        }catch(Exception e){
+            System.err.println("Failed to create initial Server Socket");
+            e.printStackTrace();
         }
-        Config.mcAdresses = mcAddresses;
-        queueHandler = new QueueHandler(numThreadsPTP);
 
+        Config.mcAdresses = mcAddresses;
+        queueHandler =new QueueHandler(numThreadsPTP);
         //Initialize every thread
         Request request = new Request(3);
         for(int i = 0; i<numThreadsPTP;i++){
-            QueueHandler.putToQueue(request,new Socket());
+            queueHandler.putToQueueInit(request);
         }
     }
     public void run(){
         while (Config.middlewareOn) {
             try {
-                //System.out.println("Waiting for client on port " +welcomeSocket.getLocalPort() + "...");
+                connectionSelector.select();
+                Set<SelectionKey> connections = connectionSelector.selectedKeys();
+                Iterator<SelectionKey> connectionIterator = connections.iterator();
+                while (connectionIterator.hasNext()) {
+                    SelectionKey connection = connectionIterator.next();
+                    if (connection.isAcceptable()) {
+                        SocketChannel clientSocket = welcomeSocket.accept();
 
-                //Wait for a client to create a TCP connection
-                Socket clientSocket = welcomeSocket.accept();
-                System.out.println(clientSocket.toString());
-                //System.out.println("Just connected to " + clientSocket.getRemoteSocketAddress());
+                        // Adjusts this channel's blocking mode to false
+                        clientSocket.configureBlocking(false);
 
-                //Give socket to handler
-                new Thread(new SocketHandler(clientSocket)).start();
-
-
-            }catch (IOException e1) {
-                if(Config.verboseLevel>0){
-                    System.err.println("Connection to client impossible");
+                        // Operation-set bit for read operations
+                        clientSocket.register(connectionSelector, SelectionKey.OP_READ);
+                        if (Config.verbose) {
+                            System.out.println("Connection accepted " + clientSocket.getLocalAddress());
+                        }
+                    } else if (connection.isReadable()) {
+                        SocketChannel clientSocket = (SocketChannel) connection.channel();
+                        ByteBuffer bufferFromClient = ByteBuffer.allocate(256);
+                        int nrBytes = clientSocket.read(bufferFromClient);
+                        if(nrBytes<0){
+                            clientSocket.close();
+                        }
+                        else {
+                            String readFromClient = new String(bufferFromClient.array()).trim();
+                            Request r = new Request(readFromClient);
+                            queueHandler.putToQueue(r, clientSocket);
+                        }
+                    }
+                    connectionIterator.remove();
                 }
-
+            } catch (Exception e) {
+                System.err.println("Failed to read from a client socket");
+                e.printStackTrace();
             }
         }
-        this.teardown();
     }
 
-    public void teardown() {
-        if (welcomeSocket != null) {
-            try {
-                welcomeSocket.close();
-            }catch(Exception e){
-                if(Config.verboseLevel>0){
-                    e.printStackTrace();
-                }
-            }
-            welcomeSocket = null;
-        }
-    }
 
 }
