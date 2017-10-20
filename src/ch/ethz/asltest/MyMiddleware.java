@@ -18,6 +18,8 @@ public class MyMiddleware implements Runnable{
     private Selector connectionSelector;
     private ServerSocketChannel welcomeSocket;
     public MyMiddleware(String ip, int port, List<String> mcAddresses, int numThreadsPTP, boolean readSharded){
+        Config.nrServers = mcAddresses.size();
+        Config.shardedRead = readSharded;
         try{
             connectionSelector = Selector.open();
             welcomeSocket = ServerSocketChannel.open();
@@ -65,6 +67,7 @@ public class MyMiddleware implements Runnable{
                         int nrBytes = clientSocket.read(bufferFromClient);
                         if(nrBytes<0){
                             clientSocket.close();
+                            connection.cancel();
                         }
                         else {
                             String readFromClient = new String(bufferFromClient.array()).trim();

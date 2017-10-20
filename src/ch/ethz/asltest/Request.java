@@ -34,6 +34,13 @@ public class Request {
         this.requestType = requestType;
     }
 
+    public Request(int requestType, List<String> keys){
+        this.requestType = requestType;
+        this.keys = keys;
+        this.restOfMessage = createStringWithKeys(keys);
+
+    }
+
     public Request(int requestType, String restMessage, List<String> keys){
         this.restOfMessage = restMessage;
         this.requestType = requestType;
@@ -90,13 +97,11 @@ public class Request {
 
     //Gets all keys from the multi get / get and puts into field keys
     private List<String> extractKeys(String restMessage){
-        //System.out.println(restMessage);
         List<String> keys = new ArrayList<>();
         StringBuilder keyBuilder = new StringBuilder();
         for(int i=0; i< restMessage.length(); i++){
             char readChar = restMessage.charAt(i);
             if(readChar == ' ' || i == restMessage.length()-1){
-                //System.out.println(keyBuilder.toString());
                 keys.add(keyBuilder.toString());
                 keyBuilder = new StringBuilder();
             }
@@ -105,6 +110,13 @@ public class Request {
             }
         }
         return keys;
+    }
+    private String createStringWithKeys(List<String> keys){
+        StringBuilder rest = new StringBuilder();
+        for(String key : keys){
+            rest.append(key+" ");
+        }
+        return rest.toString();
     }
     public String toString(){
         switch(requestType){

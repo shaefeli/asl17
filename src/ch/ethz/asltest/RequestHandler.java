@@ -17,7 +17,6 @@ public class RequestHandler implements Runnable{
     private Request request;
     private SocketChannel clientSocket;
     private static int serverToSendGet = 0;
-    private static int i=0;
     private int nrServers = Config.nrServers;
     private static final ThreadLocal<List<Socket>> initializedServerSockets = new ThreadLocal<List<Socket>>(){
         @Override
@@ -110,6 +109,10 @@ public class RequestHandler implements Runnable{
         }
         else if(request.requestType == 0){
             try{
+                if(Config.verbose){
+                    System.out.println("Error unknown request");
+                }
+
                 String lineToSend = "UNKNOWN";
                 byte[] messageToClient = lineToSend.getBytes();
                 ByteBuffer buffer = ByteBuffer.wrap(messageToClient);
@@ -127,8 +130,9 @@ public class RequestHandler implements Runnable{
     }
     private void handleSet(Request request){
         String resultForAll = "STORED";
+        List<Socket> serverSockets = getSockets();
         for(int i=0; i<nrServers;i++) {
-            Socket serverSocket = getSockets().get(i);
+            Socket serverSocket = serverSockets.get(i);
             try {
                 PrintWriter out = new PrintWriter(serverSocket.getOutputStream(), true);
                 String toSend = request.toString()+"\r";
@@ -140,7 +144,7 @@ public class RequestHandler implements Runnable{
         }
         for(int i=0; i<nrServers;i++) {
             try{
-                Socket serverSocket = getSockets().get(i);
+                Socket serverSocket = serverSockets.get(i);
                 BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
                 String serverInput = "";
                 //Loop until you get an answer
@@ -178,29 +182,23 @@ public class RequestHandler implements Runnable{
 
             BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
             String newLine = "";
+            StringBuilder totalToSendBack = new StringBuilder();
             //Loop until you get an answer
             while ((newLine = din.readLine()) == null){this.wait();}
 
-            if(Config.verbose){
-                System.out.println("Sent back to client "+clientSocket.toString()+ " from thread "+Thread.currentThread().getId()+ " is : "+newLine);
-            }
-            newLine+="\r\n";
-            byte[] messageToClient = newLine.getBytes();
-            ByteBuffer buffer = ByteBuffer.wrap(messageToClient);
-            clientSocket.write(buffer);
-            buffer.clear();
-            while(!newLine.equals("END\r\n")){
-                i++;
+            totalToSendBack.append(newLine+"\r\n");
+            while(!newLine.equals("END")){
                 newLine = din.readLine();
-                if(Config.verbose){
-                    System.out.println("Sent back to client "+clientSocket.toString()+ " from thread "+Thread.currentThread().getId()+ " is : "+newLine);
-                };
-                newLine+="\r\n";
-                byte[] msgToClientNext = newLine.getBytes();
-                ByteBuffer bufferNext = ByteBuffer.wrap(msgToClientNext);
-                clientSocket.write(bufferNext);
-                bufferNext.clear();
+
+                totalToSendBack.append(newLine+"\r\n");
             }
+            if(Config.verbose){
+                System.out.println("Sent back to client "+clientSocket.toString()+ " from thread "+Thread.currentThread().getId()+ " is : "+totalToSendBack.toString());
+            }
+            byte[] msgToClientNext = totalToSendBack.toString().getBytes();
+            ByteBuffer bufferNext = ByteBuffer.wrap(msgToClientNext);
+            clientSocket.write(bufferNext);
+            bufferNext.clear();
 
         }catch(Exception e){
             System.err.println("Failed to send result back to client ");
@@ -213,6 +211,77 @@ public class RequestHandler implements Runnable{
             handleGet(request);
         }
         else {
+            //Share the requests
+
+            int nrKeysPerServer = request.keys.size()/Config.nrServers;
+            Request[] requests = new Request[Config.nrServers];
+            int start = 0;
+            int end = nrKeysPerServer;
+            for(int i=0; i<Config.nrServers; i++){
+                if(i == Config.nrServers-1){
+                    end = request.keys.size();
+                }
+                requests[i] = new Request(4,request.keys.subList(start,end));
+                start = end;
+                end+=nrKeysPerServer;
+            }
+
+            //Send to all servers
+            List<Socket> serverSockets = getSockets();
+            for(int i=0; i<nrServers;i++) {
+                Socket serverSocket = serverSockets.get(i);
+                try {
+                    PrintWriter out = new PrintWriter(serverSocket.getOutputStream(), true);
+                    out.println(requests[i].toString());
+
+                }catch(Exception e){
+                    System.err.println("Impossible to write to server socket in multi get");
+                }
+            }
+
+
+
+            //Read from all servers and reassemble in result
+            StringBuilder result = new StringBuilder();
+            for(int i=0; i<nrServers;i++) {
+                Socket serverSocket = serverSockets.get(i);
+                try{
+                    BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+                    String newLine = "";
+                    StringBuilder ToSendBackOneServer = new StringBuilder();
+                    //Loop until you get an answer
+                    while ((newLine = din.readLine()) == null){this.wait();}
+
+                    if(Config.verbose){
+                        System.out.println("Sent back to client "+clientSocket.toString()+ " from thread "+Thread.currentThread().getId()+ " is : "+newLine);
+                    }
+                    ToSendBackOneServer.append(newLine+"\r\n");
+                    while(!newLine.equals("END")){
+                        newLine = din.readLine();
+                        if(!newLine.equals("END")) {
+                            if (Config.verbose) {
+                                System.out.println("Sent back to client " + clientSocket.toString() + " from thread " + Thread.currentThread().getId() + " is : " + newLine);
+                            }
+                            ToSendBackOneServer.append(newLine + "\r\n");
+                        }
+                    }
+                    result.append(ToSendBackOneServer.toString());
+                }catch(Exception e){
+                    System.err.println("Impossible to read from server socket in set");
+                }
+            }
+            result.append("END+\r\n");
+            try{
+                byte[] msgToClientNext = result.toString().getBytes();
+                ByteBuffer bufferNext = ByteBuffer.wrap(msgToClientNext);
+                clientSocket.write(bufferNext);
+                bufferNext.clear();
+            }catch(Exception e){
+                System.err.println("Impossible to send back to client");
+                e.printStackTrace();
+            }
+
+
 
         }
     }
