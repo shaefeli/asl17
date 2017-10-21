@@ -14,15 +14,19 @@ import java.util.Set;
  * Created by Simon on 29.09.17.
  */
 public class MyMiddleware implements Runnable{
-    QueueHandler queueHandler;
+    private QueueHandler queueHandler;
     private Selector connectionSelector;
     private ServerSocketChannel welcomeSocket;
+
+    //Starts the middleware
     public MyMiddleware(String ip, int port, List<String> mcAddresses, int numThreadsPTP, boolean readSharded){
+
         //Shutdown hook for the middleware
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 try {
                     welcomeSocket.close();
+                    //Here we print all statistics
                     printAllStatistics();
                 } catch(Exception e){
                     System.err.println("Error while shutting down");
@@ -30,34 +34,40 @@ public class MyMiddleware implements Runnable{
             }
         });
 
-        Config.nrServers = mcAddresses.size();
-        Config.shardedRead = readSharded;
+        Params.nrServers = mcAddresses.size();
+        Params.shardedRead = readSharded;
+        Params.mcAdresses = mcAddresses;
+
+        //Set up the welcome socket
         try{
             connectionSelector = Selector.open();
             welcomeSocket = ServerSocketChannel.open();
-            InetSocketAddress serverAdress = new InetSocketAddress(ip,port);
-            welcomeSocket.bind(serverAdress);
+            InetSocketAddress serverAddress = new InetSocketAddress(ip,port);
+            welcomeSocket.bind(serverAddress);
             welcomeSocket.configureBlocking(false);
             int ops = welcomeSocket.validOps();
             welcomeSocket.register(connectionSelector,ops,null);
 
         }catch(Exception e){
-            System.err.println("Failed to create initial Server Socket");
+            System.err.println("Failed to create initial Server welcome Socket");
             e.printStackTrace();
         }
 
-        Config.mcAdresses = mcAddresses;
+        //create a queue, and initialize every worker thread with a mock init request
+        //Note that we prefer doing it this way than using the ThreadPoolExecutor method
+        //prestartAllCoreThreads(), since there is going to be idle waiting after starting them up
         queueHandler =new QueueHandler(numThreadsPTP);
-        //Initialize every thread
+
         Request request = new Request(3);
         for(int i = 0; i<numThreadsPTP;i++){
             queueHandler.putToQueueInit(request);
         }
     }
+
     //allocate buffer is 1100, because a key is maximum 5 bytes, there are maximum 10 of them
     //and a value is maximum 1024B => total = 1024*10+5*10 = 102450 + flags and all: 11000.
     public void run(){
-        while (Config.middlewareOn) {
+        while (Params.middlewareOn) {
             try {
                 connectionSelector.select();
                 Set<SelectionKey> connections = connectionSelector.selectedKeys();
@@ -72,7 +82,7 @@ public class MyMiddleware implements Runnable{
 
                         // Operation-set bit for read operations
                         clientSocket.register(connectionSelector, SelectionKey.OP_READ);
-                        if (Config.verbose) {
+                        if (Params.verbose) {
                             System.out.println("Connection accepted " + clientSocket.getLocalAddress());
                         }
                     } else if (connection.isReadable()) {

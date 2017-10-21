@@ -4,7 +4,7 @@ import java.util.*;
 
 public class RunMW {
 
-    static String myIp = null;
+    private static String myIp = null;
     static int myPort = 0;
     static List<String> mcAddresses = null;
     static int numThreadsPTP = -1;

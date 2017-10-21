@@ -12,27 +12,29 @@ import java.util.List;
 /**
  * Created by Simon on 06.10.17.
  */
-//The request handler is one working thread
+//One request handler object represents one worker thread
 public class RequestHandler implements Runnable{
     private Request request;
     private SocketChannel clientSocket;
-    private static int serverToSendGet = 0;
-    private int nrServers = Config.nrServers;
+    private static int serverToSendGet = 0;    //The round-robin for handling the get requests
+    private int nrServers = Params.nrServers;
+
+    //This initialization is done only the first time the thread is called
     private static final ThreadLocal<List<Socket>> initializedServerSockets = new ThreadLocal<List<Socket>>(){
         @Override
         public List<Socket> initialValue(){
             List<Socket> serverSockets = new ArrayList<>();
-            for(String mcAdress: Config.mcAdresses){
+            for(String mcAdress: Params.mcAdresses){
                 int port = getPort(mcAdress);
                 String hostname = getHostname(mcAdress);
                 try{
                     Socket serverSocket = new Socket(hostname, port);
                     serverSockets.add(serverSocket);
-                    if(Config.verbose){
+                    if(Params.verbose){
                         System.out.println("Just opened a socket to the server "+serverSocket.toString()+ "from thread number "+ Thread.currentThread().getId());
                     }
                 }catch(Exception e){
-                    System.err.println("Failed to reach "+hostname+" , did you put the ip ? ");
+                    System.err.println("Failed to reach "+hostname+" , did you put the correct ip, and start uo the servers?");
                     e.printStackTrace();
                 }
             }
@@ -83,54 +85,60 @@ public class RequestHandler implements Runnable{
         }
     };
 
-
+    //Used to treat normal requests
     public RequestHandler(Request request, SocketChannel clientSocket){
         this.request = request;
         this.clientSocket = clientSocket;
     }
+
+    //Used to treat a mock init request, where we don't need to send anything back to the client
     public RequestHandler(Request request){
         this.request = request;
     }
 
     public void run(){
-       if(Config.verbose){
+       if(Params.verbose){
            System.out.println("Thread number "+Thread.currentThread().getId()+ " handles request :"+request.toString());
        }
-        getSockets();
-        if(request.requestType == 4){
+
+        if(request.requestType == RequestType.SET){
+            handleSet(request);
+        }
+
+        else if(request.requestType == RequestType.GET){
+            handleGet(request);
+        }
+        else if (request.requestType == RequestType.INIT){
+            getSockets();   //This is done so that the ThreadLocal gets initialized;
+            //Do nothing, it was only to initialize the threads
+        }
+        else if(request.requestType == RequestType.MGET){
             handleMultiGet(request);
         }
 
-        else if(request.requestType == 1){
-            handleSet(request);
-        }
-        else if(request.requestType == 2){
-            handleGet(request);
-        }
-        else if(request.requestType == 0){
+        //Unknown request
+        else if(request.requestType == RequestType.UNKNOWN){
             try{
-                if(Config.verbose){
-                    System.out.println("Error unknown request");
+                if(Params.verbose){
+                    System.out.println("Error unknown request, "+request.toString());
                 }
-
                 String lineToSend = "UNKNOWN";
                 byte[] messageToClient = lineToSend.getBytes();
                 ByteBuffer buffer = ByteBuffer.wrap(messageToClient);
                 clientSocket.write(buffer);
                 buffer.clear();
             }catch(Exception e){
-                System.err.println("Impossible to get outputstream");
+                System.err.println("Impossible send back to client");
                 e.printStackTrace();
             }
 
         }
-        //If request is init (3) do nothing
-
-
     }
     private void handleSet(Request request){
-        String resultForAll = "STORED";
+        String resultForAll = "STORED";     //one result to send for all servers
         List<Socket> serverSockets = getSockets();
+
+        //Send set to every server
         for(int i=0; i<nrServers;i++) {
             Socket serverSocket = serverSockets.get(i);
             try {
@@ -142,24 +150,28 @@ public class RequestHandler implements Runnable{
                 System.err.println("Impossible to write to server socket in set");
             }
         }
+
+        //Receive answer from every server
         for(int i=0; i<nrServers;i++) {
             try{
                 Socket serverSocket = serverSockets.get(i);
                 BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
-                String serverInput = "";
-                //Loop until you get an answer
+                String serverInput;
+
                 while ((serverInput = din.readLine()) == null){this.wait();}
+                //If there is one error for one server, the outputed result for all the servers is this error
                 if(!serverInput.equals("STORED")){
                     resultForAll = serverInput;
                 }
 
             }catch(Exception e){
-                System.err.println("Impossible to read from server socket in set");
+                System.err.println("Impossible to read from server socket in set request");
             }
         }
 
+        //Send answer back to client
         try {
-            if(Config.verbose){
+            if(Params.verbose){
                 System.out.println("Sent back to client "+clientSocket.toString()+ " from thread "+Thread.currentThread().getId()+ " is : "+resultForAll);
             }
             resultForAll+="\r\n";
@@ -173,28 +185,34 @@ public class RequestHandler implements Runnable{
             e.printStackTrace();
         }
     }
+
     private void handleGet(Request request){
         Socket serverSocket = getSockets().get(serverToSendGet);
-        serverToSendGet = serverToSendGet%nrServers;
+        serverToSendGet = (serverToSendGet+1)%nrServers;    //This is the round robin (globally for every thread)
         try{
+
+            //Send the request
             PrintWriter out = new PrintWriter(serverSocket.getOutputStream(), true);
             out.println(request.toString());
 
+            //Get the answer back
             BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
-            String newLine = "";
+            String newLine;
             StringBuilder totalToSendBack = new StringBuilder();
-            //Loop until you get an answer
+
             while ((newLine = din.readLine()) == null){this.wait();}
 
-            totalToSendBack.append(newLine+"\r\n");
+            totalToSendBack.append(newLine);
+            totalToSendBack.append("\r\n");
             while(!newLine.equals("END")){
                 newLine = din.readLine();
-
-                totalToSendBack.append(newLine+"\r\n");
+                totalToSendBack.append(newLine);
+                totalToSendBack.append("\r\n");
             }
-            if(Config.verbose){
+            if(Params.verbose){
                 System.out.println("Sent back to client "+clientSocket.toString()+ " from thread "+Thread.currentThread().getId()+ " is : "+totalToSendBack.toString());
             }
+
             byte[] msgToClientNext = totalToSendBack.toString().getBytes();
             ByteBuffer bufferNext = ByteBuffer.wrap(msgToClientNext);
             clientSocket.write(bufferNext);
@@ -207,20 +225,20 @@ public class RequestHandler implements Runnable{
 
     }
     private void handleMultiGet(Request request){
-        if(!Config.shardedRead){
+        if(!Params.shardedRead){
             handleGet(request);
         }
         else {
             System.out.println("Welcome to multi get");
-            //Share the requests
 
-            int nrKeysPerServer = request.keys.size()/Config.nrServers;
-            int leftKeysToShare = request.keys.size()-nrKeysPerServer*Config.nrServers;
-            Request[] requests = new Request[Config.nrServers];
+            //Share the requests
+            int nrKeysPerServer = request.keys.size()/ Params.nrServers;
+            int leftKeysToShare = request.keys.size()-nrKeysPerServer* Params.nrServers;
+            Request[] requests = new Request[Params.nrServers];
             int start = 0;
             int end = nrKeysPerServer;
-            for(int i=0; i<Config.nrServers; i++){
-                if(i == Config.nrServers-1){
+            for(int i = 0; i< Params.nrServers; i++){
+                if(i == Params.nrServers-1){
                     end = request.keys.size();
                 }
                 if(leftKeysToShare > 0){
@@ -259,17 +277,19 @@ public class RequestHandler implements Runnable{
                 Socket serverSocket = serverSockets.get(i);
                 try{
                     BufferedReader din = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
-                    String newLine = "";
+                    String newLine;
                     StringBuilder ToSendBackOneServer = new StringBuilder();
                     //Loop until you get an answer
                     while ((newLine = din.readLine()) == null){this.wait();}
                     if(!newLine.equals("END")) {
-                        ToSendBackOneServer.append(newLine + "\r\n");
+                        ToSendBackOneServer.append(newLine);
+                        ToSendBackOneServer.append("\r\n");
                     }
                     while(!newLine.equals("END")){
                         newLine = din.readLine();
                         if(!newLine.equals("END")) {
-                            ToSendBackOneServer.append(newLine + "\r\n");
+                            ToSendBackOneServer.append(newLine);
+                            ToSendBackOneServer.append("\r\n");
                         }
                     }
                     result.append(ToSendBackOneServer.toString());
@@ -279,7 +299,7 @@ public class RequestHandler implements Runnable{
             }
             result.append("END" +"\r\n");
             try{
-                if (Config.verbose) {
+                if (Params.verbose) {
                     System.out.println("Sent back to client " + clientSocket.toString() + " from thread " + Thread.currentThread().getId() + " is : " + result.toString());
                 }
                 byte[] msgToClientNext = result.toString().getBytes();

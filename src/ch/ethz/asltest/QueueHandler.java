@@ -10,20 +10,23 @@ public class QueueHandler {
     public ThreadPoolExecutor workerThreadPool;
 
     public QueueHandler(int numThreadsPTP){
-        workerThreadPool = new ThreadPoolExecutor(numThreadsPTP,numThreadsPTP,Config.keepAliveTime, TimeUnit.SECONDS,new LinkedBlockingQueue<>());
+        //No that we use a LinkedBlockingQueue, here since it does exactly what we want.
+        //Unbounded queues. Using an unbounded queue will cause new tasks to wait in the queue when all corePoolSize threads are busy.
+        // Thus, no more than corePoolSize threads will ever be created
+        workerThreadPool = new ThreadPoolExecutor(numThreadsPTP,numThreadsPTP, Params.keepAliveTime, TimeUnit.SECONDS,new LinkedBlockingQueue<>());
     }
 
     public void putToQueue(Request request, SocketChannel clientSocket){
-        // Receive TCP packet and give it to the queue Handler
-        if(Config.verbose){
+        //Put the request to queue and execute it (after waiting in the queue)
+        if(Params.verbose){
             System.out.println("Size of queue: "+sizeOfQueue());
             System.out.println(workerThreadPool.getActiveCount());
         }
         workerThreadPool.execute(new RequestHandler(request, clientSocket));
     }
     public  void putToQueueInit(Request request){
-        // Receive TCP packet and give it to the queue Handler
-        if(Config.verbose){
+        //Put the request to queue and execute it (after waiting in the queue), for initilaizing the threads
+        if(Params.verbose){
             System.out.println("Size of queue: "+sizeOfQueue());
             System.out.println(workerThreadPool.getActiveCount());
         }
