@@ -34,7 +34,7 @@ public class RequestHandler implements Runnable{
                         System.out.println("Just opened a socket to the server "+serverSocket.toString()+ "from thread number "+ Thread.currentThread().getId());
                     }
                 }catch(Exception e){
-                    System.err.println("Failed to reach "+hostname+" , did you put the correct ip, and start uo the servers?");
+                    System.err.println("Failed to reach "+hostname+" , did you put the correct ip, and start up the servers?");
                     e.printStackTrace();
                 }
             }
