@@ -11,7 +11,6 @@ public class Request {
     //code 2: GET
     //code 3: INIT
     //code 4: MULTI GET
-    //code 5: SET VALUE
     //code 0: UNKNOWN
     public int requestType =0;
     public String restOfMessage = "";
@@ -102,6 +101,9 @@ public class Request {
         for(int i=0; i< restMessage.length(); i++){
             char readChar = restMessage.charAt(i);
             if(readChar == ' ' || i == restMessage.length()-1){
+                if(i==restMessage.length()-1){
+                    keyBuilder.append(readChar);
+                }
                 keys.add(keyBuilder.toString());
                 keyBuilder = new StringBuilder();
             }

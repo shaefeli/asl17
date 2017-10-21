@@ -211,6 +211,7 @@ public class RequestHandler implements Runnable{
             handleGet(request);
         }
         else {
+            System.out.println("Welcome to multi get");
             //Share the requests
 
             int nrKeysPerServer = request.keys.size()/Config.nrServers;
@@ -231,6 +232,8 @@ public class RequestHandler implements Runnable{
             for(int i=0; i<nrServers;i++) {
                 Socket serverSocket = serverSockets.get(i);
                 try {
+
+                    System.out.println(requests[i].toString());
                     PrintWriter out = new PrintWriter(serverSocket.getOutputStream(), true);
                     out.println(requests[i].toString());
 
@@ -252,16 +255,10 @@ public class RequestHandler implements Runnable{
                     //Loop until you get an answer
                     while ((newLine = din.readLine()) == null){this.wait();}
 
-                    if(Config.verbose){
-                        System.out.println("Sent back to client "+clientSocket.toString()+ " from thread "+Thread.currentThread().getId()+ " is : "+newLine);
-                    }
                     ToSendBackOneServer.append(newLine+"\r\n");
                     while(!newLine.equals("END")){
                         newLine = din.readLine();
                         if(!newLine.equals("END")) {
-                            if (Config.verbose) {
-                                System.out.println("Sent back to client " + clientSocket.toString() + " from thread " + Thread.currentThread().getId() + " is : " + newLine);
-                            }
                             ToSendBackOneServer.append(newLine + "\r\n");
                         }
                     }
@@ -270,8 +267,11 @@ public class RequestHandler implements Runnable{
                     System.err.println("Impossible to read from server socket in set");
                 }
             }
-            result.append("END+\r\n");
+            result.append("END" +"\r\n");
             try{
+                if (Config.verbose) {
+                    System.out.println("Sent back to client " + clientSocket.toString() + " from thread " + Thread.currentThread().getId() + " is : " + result.toString());
+                }
                 byte[] msgToClientNext = result.toString().getBytes();
                 ByteBuffer bufferNext = ByteBuffer.wrap(msgToClientNext);
                 clientSocket.write(bufferNext);

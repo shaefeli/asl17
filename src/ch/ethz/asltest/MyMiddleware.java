@@ -18,6 +18,18 @@ public class MyMiddleware implements Runnable{
     private Selector connectionSelector;
     private ServerSocketChannel welcomeSocket;
     public MyMiddleware(String ip, int port, List<String> mcAddresses, int numThreadsPTP, boolean readSharded){
+        //Shutdown hook for the middleware
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                try {
+                    welcomeSocket.close();
+                    printAllStatistics();
+                } catch(Exception e){
+                    System.err.println("Error while shutting down");
+                }
+            }
+        });
+
         Config.nrServers = mcAddresses.size();
         Config.shardedRead = readSharded;
         try{
@@ -82,6 +94,10 @@ public class MyMiddleware implements Runnable{
                 e.printStackTrace();
             }
         }
+    }
+
+    private void printAllStatistics(){
+
     }
 
 

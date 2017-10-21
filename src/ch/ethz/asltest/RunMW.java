@@ -27,7 +27,7 @@ public class RunMW {
         mcAddresses.add("127.0.0.1:3001");
         myPort = 6800;
         numThreadsPTP = 8;
-        readSharded = false;
+        readSharded = true;
         new MyMiddleware(myIp, myPort, mcAddresses, numThreadsPTP, readSharded).run();
 
     }

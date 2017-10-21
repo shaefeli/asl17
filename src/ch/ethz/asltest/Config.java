@@ -7,6 +7,7 @@ import java.util.List;
  */
 public class Config {
     public static final boolean verbose = true;
+    public static final boolean experiment = false;
     public static boolean shardedRead;
     public static boolean middlewareOn = true;
     public static final int keepAliveTime = 1000;
