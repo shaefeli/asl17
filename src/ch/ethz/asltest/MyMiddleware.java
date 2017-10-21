@@ -54,6 +54,8 @@ public class MyMiddleware implements Runnable{
             queueHandler.putToQueueInit(request);
         }
     }
+    //allocate buffer is 1100, because a key is maximum 5 bytes, there are maximum 10 of them
+    //and a value is maximum 1024B => total = 1024*10+5*10 = 102450 + flags and all: 11000.
     public void run(){
         while (Config.middlewareOn) {
             try {
@@ -75,7 +77,7 @@ public class MyMiddleware implements Runnable{
                         }
                     } else if (connection.isReadable()) {
                         SocketChannel clientSocket = (SocketChannel) connection.channel();
-                        ByteBuffer bufferFromClient = ByteBuffer.allocate(256);
+                        ByteBuffer bufferFromClient = ByteBuffer.allocate(11000);
                         int nrBytes = clientSocket.read(bufferFromClient);
                         if(nrBytes<0){
                             clientSocket.close();

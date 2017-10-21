@@ -215,6 +215,7 @@ public class RequestHandler implements Runnable{
             //Share the requests
 
             int nrKeysPerServer = request.keys.size()/Config.nrServers;
+            int leftKeysToShare = request.keys.size()-nrKeysPerServer*Config.nrServers;
             Request[] requests = new Request[Config.nrServers];
             int start = 0;
             int end = nrKeysPerServer;
@@ -222,7 +223,15 @@ public class RequestHandler implements Runnable{
                 if(i == Config.nrServers-1){
                     end = request.keys.size();
                 }
-                requests[i] = new Request(4,request.keys.subList(start,end));
+                if(leftKeysToShare > 0){
+                    end += 1;
+                    requests[i] = new Request(4,request.keys.subList(start,end));
+                    leftKeysToShare--;
+                }
+                else{
+                    requests[i] = new Request(4,request.keys.subList(start,end));
+                }
+
                 start = end;
                 end+=nrKeysPerServer;
             }
@@ -254,8 +263,9 @@ public class RequestHandler implements Runnable{
                     StringBuilder ToSendBackOneServer = new StringBuilder();
                     //Loop until you get an answer
                     while ((newLine = din.readLine()) == null){this.wait();}
-
-                    ToSendBackOneServer.append(newLine+"\r\n");
+                    if(!newLine.equals("END")) {
+                        ToSendBackOneServer.append(newLine + "\r\n");
+                    }
                     while(!newLine.equals("END")){
                         newLine = din.readLine();
                         if(!newLine.equals("END")) {
@@ -274,6 +284,7 @@ public class RequestHandler implements Runnable{
                 }
                 byte[] msgToClientNext = result.toString().getBytes();
                 ByteBuffer bufferNext = ByteBuffer.wrap(msgToClientNext);
+                System.out.println(bufferNext.position());
                 clientSocket.write(bufferNext);
                 bufferNext.clear();
             }catch(Exception e){
