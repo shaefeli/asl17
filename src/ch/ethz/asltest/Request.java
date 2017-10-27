@@ -11,6 +11,7 @@ public class Request {
     public int requestType =RequestType.UNKNOWN;
     public String restOfMessage = ""; //The whole request without the request type
     public List<String> keys = new ArrayList<>();   //In case of a multi get we want to control the number of keys, not going to be filled in case of simple get.
+    public long startTimeInQueue;
 
 
     //Main constructor: returns a request from the raw text received from the Socket
@@ -71,6 +72,7 @@ public class Request {
                     case "set":
                         requestType = RequestType.SET;
                         restOfMessage = restMessage;
+                        startTimeInQueue = System.nanoTime();
                         return new Request(requestType,restMessage);
                     case "get":
                         requestType = RequestType.GET;
@@ -78,18 +80,22 @@ public class Request {
                         keys = extractKeys(restMessage);    //We extract the keys to control if it is a get or a mget
                         if(keys.size() >1){
                             requestType = RequestType.MGET;
+                            startTimeInQueue = System.nanoTime();
                             return new Request(requestType, restMessage, keys);
                         }
                         else{
+                            startTimeInQueue = System.nanoTime();
                             return new Request(requestType,restMessage);
                         }
                     case "init":
                         requestType = RequestType.INIT;
                         restOfMessage = restMessage;
+                        startTimeInQueue = System.nanoTime();
                         return new Request(requestType);
 
                     default:
                         requestType = RequestType.UNKNOWN;
+                        startTimeInQueue = System.nanoTime();
                         return new Request(requestType);
 
                 }
@@ -97,6 +103,7 @@ public class Request {
 
         }
         //If it didn't recognize these patterns it is unknown
+        startTimeInQueue = System.nanoTime();
         return new Request(RequestType.UNKNOWN);
     }
 

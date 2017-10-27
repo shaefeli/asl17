@@ -6,14 +6,17 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Simon on 29.09.17.
  */
 public class MyMiddleware implements Runnable{
+    //For statistics
+    public static ConcurrentHashMap forSetParse = new ConcurrentHashMap<>();
+    public static Set<Long> parseTime = forSetParse.newKeySet();
+
     private QueueHandler queueHandler;
     private Selector connectionSelector;
     private ServerSocketChannel welcomeSocket;
@@ -62,6 +65,20 @@ public class MyMiddleware implements Runnable{
         for(int i = 0; i<numThreadsPTP;i++){
             queueHandler.putToQueueInit(request);
         }
+
+        //Statistics related
+        Statistics.timeInQueue = new HashSet<>();
+        Statistics.nrGets = new HashSet<>();
+        Statistics.nrSets = new HashSet<>();
+        Statistics.nrMGets = new HashSet<>();
+        Statistics.queueLength = new HashSet<>();
+        Statistics.parsingTime = new HashSet<>();
+        Statistics.getTime = new HashSet<>();
+        Statistics.setTime = new HashSet<>();
+        Statistics.mgetTime = new HashSet<>();
+        Statistics.mgetMemTime = new HashSet<>();
+        Timer timer = new Timer();
+        timer.schedule(new StatisticsAggregator(),0,Statistics.timeWindowStat*1000);
     }
 
     //allocate buffer is 1100, because a key is maximum 5 bytes, there are maximum 10 of them
@@ -87,7 +104,7 @@ public class MyMiddleware implements Runnable{
                         }
                     } else if (connection.isReadable()) {
                         SocketChannel clientSocket = (SocketChannel) connection.channel();
-                        ByteBuffer bufferFromClient = ByteBuffer.allocate(11000);
+                        ByteBuffer bufferFromClient = ByteBuffer.allocate(2000);
                         int nrBytes = clientSocket.read(bufferFromClient);
                         if(nrBytes<0){
                             clientSocket.close();
@@ -95,7 +112,11 @@ public class MyMiddleware implements Runnable{
                         }
                         else {
                             String readFromClient = new String(bufferFromClient.array()).trim();
+                            //measure time to parse a request
+                            long startParsingTime = System.nanoTime();
                             Request r = new Request(readFromClient);
+                            long endParsingTime = System.nanoTime()-startParsingTime;
+                            parseTime.add(endParsingTime);
                             queueHandler.putToQueue(r, clientSocket);
                         }
                     }
@@ -109,7 +130,16 @@ public class MyMiddleware implements Runnable{
     }
 
     private void printAllStatistics(){
-
+        System.out.println(Statistics.timeInQueue);
+        System.out.println(Statistics.nrGets);
+        System.out.println(Statistics.nrSets);
+        System.out.println(Statistics.nrMGets);
+        System.out.println(Statistics.queueLength);
+        System.out.println(Statistics.parsingTime);
+        System.out.println(Statistics.getTime);
+        System.out.println(Statistics.setTime);
+        System.out.println(Statistics.mgetTime);
+        System.out.println(Statistics.mgetMemTime);
     }
 
 

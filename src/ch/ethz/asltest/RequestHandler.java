@@ -8,12 +8,31 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by Simon on 06.10.17.
  */
 //One request handler object represents one worker thread
 public class RequestHandler implements Runnable{
+    //variables for statistics
+    public static ConcurrentHashMap forSetQueue = new ConcurrentHashMap<>();
+    public static Set<Long> timeInQueue = forSetQueue.newKeySet();
+    public static ConcurrentHashMap forSetGet = new ConcurrentHashMap<>();
+    public static Set<Long> timeInGet = forSetGet.newKeySet();
+    public static ConcurrentHashMap forSetSet = new ConcurrentHashMap<>();
+    public static Set<Long> timeInSet = forSetSet.newKeySet();
+    public static ConcurrentHashMap forSetMGet = new ConcurrentHashMap<>();
+    public static Set<Long> timeInMGet = forSetMGet.newKeySet();
+    public static ConcurrentHashMap forSetMemMGet = new ConcurrentHashMap<>();
+    public static Set<Long> timeInMGetMem = forSetMemMGet.newKeySet();
+    public static AtomicInteger nrGets = new AtomicInteger(0);
+    public static AtomicInteger nrSets = new AtomicInteger(0);
+    public static AtomicInteger nrMGets = new AtomicInteger(0);
+
+    //varaiables for executing thread
     private Request request;
     private SocketChannel clientSocket;
     private static int serverToSendGet = 0;    //The round-robin for handling the get requests
@@ -100,12 +119,17 @@ public class RequestHandler implements Runnable{
        if(Params.verbose){
            System.out.println("Thread number "+Thread.currentThread().getId()+ " handles request :"+request.toString());
        }
-
+        long endTimeInqueue = System.nanoTime()-request.startTimeInQueue;
+        if(request.requestType != RequestType.INIT){
+            timeInQueue.add(endTimeInqueue);
+        }
         if(request.requestType == RequestType.SET){
+            nrSets.getAndIncrement();
             handleSet(request);
         }
 
         else if(request.requestType == RequestType.GET){
+            nrGets.getAndIncrement();
             handleGet(request);
         }
         else if (request.requestType == RequestType.INIT){
@@ -113,15 +137,14 @@ public class RequestHandler implements Runnable{
             //Do nothing, it was only to initialize the threads
         }
         else if(request.requestType == RequestType.MGET){
+            nrMGets.getAndIncrement();
             handleMultiGet(request);
         }
 
         //Unknown request
         else if(request.requestType == RequestType.UNKNOWN){
             try{
-                if(Params.verbose){
-                    System.out.println("Error unknown request, "+request.toString());
-                }
+                System.err.println("Error unknown request, "+request.toString());
                 String lineToSend = "UNKNOWN";
                 byte[] messageToClient = lineToSend.getBytes();
                 ByteBuffer buffer = ByteBuffer.wrap(messageToClient);
@@ -135,6 +158,7 @@ public class RequestHandler implements Runnable{
         }
     }
     private void handleSet(Request request){
+        long startTimeInSet = System.nanoTime();
         String resultForAll = "STORED";     //one result to send for all servers
         List<Socket> serverSockets = getSockets();
 
@@ -184,9 +208,12 @@ public class RequestHandler implements Runnable{
             System.err.println("Failed to send result back to client ");
             e.printStackTrace();
         }
+        long endTimeInSet = System.nanoTime()-startTimeInSet;
+        timeInSet.add(endTimeInSet);
     }
 
     private void handleGet(Request request){
+        long startTimeInGet = System.nanoTime();
         Socket serverSocket = getSockets().get(serverToSendGet);
         serverToSendGet = (serverToSendGet+1)%nrServers;    //This is the round robin (globally for every thread)
         try{
@@ -222,14 +249,19 @@ public class RequestHandler implements Runnable{
             System.err.println("Failed to send result back to client ");
             e.printStackTrace();
         }
+        long endTimeInGet = System.nanoTime()-startTimeInGet;
+        timeInGet.add(endTimeInGet);
 
     }
     private void handleMultiGet(Request request){
+        long startTimeInMGet = System.nanoTime();
         if(!Params.shardedRead){
+            long startTimeMemcachedMGet = System.nanoTime();
             handleGet(request);
+            long endTimeMemcachedMGet = System.nanoTime()-startTimeMemcachedMGet;
+            timeInMGetMem.add(endTimeMemcachedMGet);
         }
         else {
-            System.out.println("Welcome to multi get");
 
             //Share the requests
             int nrKeysPerServer = request.keys.size()/ Params.nrServers;
@@ -254,13 +286,12 @@ public class RequestHandler implements Runnable{
                 end+=nrKeysPerServer;
             }
 
+            long startTimeMemcachedMGet = System.nanoTime();
             //Send to all servers
             List<Socket> serverSockets = getSockets();
             for(int i=0; i<nrServers;i++) {
                 Socket serverSocket = serverSockets.get(i);
                 try {
-
-                    System.out.println(requests[i].toString());
                     PrintWriter out = new PrintWriter(serverSocket.getOutputStream(), true);
                     out.println(requests[i].toString());
 
@@ -297,6 +328,8 @@ public class RequestHandler implements Runnable{
                     System.err.println("Impossible to read from server socket in set");
                 }
             }
+            long endTimeMemcachedMGet = System.nanoTime()-startTimeMemcachedMGet;
+            timeInMGetMem.add(endTimeMemcachedMGet);
             result.append("END" +"\r\n");
             try{
                 if (Params.verbose) {
@@ -304,17 +337,15 @@ public class RequestHandler implements Runnable{
                 }
                 byte[] msgToClientNext = result.toString().getBytes();
                 ByteBuffer bufferNext = ByteBuffer.wrap(msgToClientNext);
-                System.out.println(bufferNext.position());
                 clientSocket.write(bufferNext);
                 bufferNext.clear();
             }catch(Exception e){
                 System.err.println("Impossible to send back to client");
                 e.printStackTrace();
             }
-
-
-
         }
+        long endTimeInMGet = System.nanoTime()-startTimeInMGet;
+        timeInMGet.add(endTimeInMGet);
     }
     private static List<Socket> getSockets(){
         return initializedServerSockets.get();
