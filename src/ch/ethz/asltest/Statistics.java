@@ -6,6 +6,7 @@ import java.util.Set;
  * Created by Simon on 27.10.17.
  */
 public class Statistics {
+    public static String fileName = "statistics.txt";
     public static int timeWindowStat = 1;
     public static Set<Long> timeInQueue;
     public static Set<Long> parsingTime;

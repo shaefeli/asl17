@@ -1,5 +1,8 @@
 package ch.ethz.asltest;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -130,16 +133,41 @@ public class MyMiddleware implements Runnable{
     }
 
     private void printAllStatistics(){
-        System.out.println(Statistics.timeInQueue);
-        System.out.println(Statistics.nrGets);
-        System.out.println(Statistics.nrSets);
-        System.out.println(Statistics.nrMGets);
-        System.out.println(Statistics.queueLength);
-        System.out.println(Statistics.parsingTime);
-        System.out.println(Statistics.getTime);
-        System.out.println(Statistics.setTime);
-        System.out.println(Statistics.mgetTime);
-        System.out.println(Statistics.mgetMemTime);
+        BufferedWriter out = null;
+        try
+        {
+            FileWriter fstream = new FileWriter(Statistics.fileName, true);
+            out = new BufferedWriter(fstream);
+            out.write("Configuration :\nnrThreads: toadd to fields of class\n...\n");
+            out.write("Times in queue "+Statistics.timeInQueue+"\n");
+            out.write("Parsing times "+Statistics.parsingTime+"\n");
+            out.write("Times in get "+Statistics.getTime+"\n");
+            out.write("Times in set "+Statistics.setTime+"\n");
+            out.write("Times in mget "+Statistics.mgetTime+"\n");
+            out.write("Times in mget only memcached part "+Statistics.mgetMemTime+"\n");
+            out.write("Queue lenghts "+Statistics.queueLength+"\n");
+            out.write("Number of gets "+Statistics.nrGets+"\n");
+            out.write("Number of sets"+Statistics.nrSets+"\n");
+            out.write("Number of mgets"+Statistics.nrMGets+"\n");
+            out.write("\n\n\n\n\n");
+
+
+        }
+        catch (IOException e)
+        {
+            System.err.println("Error: " + e.getMessage());
+        }
+        finally
+        {
+            if(out != null) {
+                try{
+                    out.close();
+                }catch(Exception e){
+                    System.err.println("Impossible to write to file");
+                }
+
+            }
+        }
     }
 
 
