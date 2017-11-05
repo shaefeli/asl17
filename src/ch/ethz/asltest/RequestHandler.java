@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by Simon on 06.10.17.
@@ -18,16 +19,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 //One request handler object represents one worker thread
 public class RequestHandler implements Runnable{
     //variables for statistics
-    public static ConcurrentHashMap forSetQueue = new ConcurrentHashMap<>();
-    public static Set<Long> timeInQueue = forSetQueue.newKeySet();
-    public static ConcurrentHashMap forSetGet = new ConcurrentHashMap<>();
-    public static Set<Long> timeInGet = forSetGet.newKeySet();
-    public static ConcurrentHashMap forSetSet = new ConcurrentHashMap<>();
-    public static Set<Long> timeInSet = forSetSet.newKeySet();
-    public static ConcurrentHashMap forSetMGet = new ConcurrentHashMap<>();
-    public static Set<Long> timeInMGet = forSetMGet.newKeySet();
-    public static ConcurrentHashMap forSetMemMGet = new ConcurrentHashMap<>();
-    public static Set<Long> timeInMGetMem = forSetMemMGet.newKeySet();
+    public static AtomicInteger timeInQueueCount = new AtomicInteger(0);
+    public static AtomicLong timeInQueue = new AtomicLong(0);
+
+    public static AtomicInteger timeInGetCount = new AtomicInteger(0);
+    public static AtomicLong timeInGet = new AtomicLong(0);
+
+    public static AtomicInteger timeInSetCount = new AtomicInteger(0);
+    public static AtomicLong timeInSet = new AtomicLong(0);
+
+    public static AtomicInteger timeInMGetCount = new AtomicInteger(0);
+    public static AtomicLong timeInMGet = new AtomicLong(0);
+
+    public static AtomicInteger timeInMGetMemCount = new AtomicInteger(0);
+    public static AtomicLong timeInMGetMem = new AtomicLong(0);
+
     public static AtomicInteger nrGets = new AtomicInteger(0);
     public static AtomicInteger nrSets = new AtomicInteger(0);
     public static AtomicInteger nrMGets = new AtomicInteger(0);
@@ -121,7 +127,8 @@ public class RequestHandler implements Runnable{
        }
         long endTimeInqueue = System.nanoTime()-request.startTimeInQueue;
         if(request.requestType != RequestType.INIT){
-            timeInQueue.add(endTimeInqueue);
+            timeInQueue.getAndAdd(endTimeInqueue);
+            timeInQueueCount.getAndIncrement();
         }
         if(request.requestType == RequestType.SET){
             nrSets.getAndIncrement();
@@ -209,7 +216,8 @@ public class RequestHandler implements Runnable{
             e.printStackTrace();
         }
         long endTimeInSet = System.nanoTime()-startTimeInSet;
-        timeInSet.add(endTimeInSet);
+        timeInSet.getAndAdd(endTimeInSet);
+        timeInSetCount.getAndIncrement();
     }
 
     private void handleGet(Request request){
@@ -250,8 +258,8 @@ public class RequestHandler implements Runnable{
             e.printStackTrace();
         }
         long endTimeInGet = System.nanoTime()-startTimeInGet;
-        timeInGet.add(endTimeInGet);
-
+        timeInGet.addAndGet(endTimeInGet);
+        timeInGetCount.getAndIncrement();
     }
     private void handleMultiGet(Request request){
         long startTimeInMGet = System.nanoTime();
@@ -259,7 +267,8 @@ public class RequestHandler implements Runnable{
             long startTimeMemcachedMGet = System.nanoTime();
             handleGet(request);
             long endTimeMemcachedMGet = System.nanoTime()-startTimeMemcachedMGet;
-            timeInMGetMem.add(endTimeMemcachedMGet);
+            timeInMGetMem.addAndGet(endTimeMemcachedMGet);
+            timeInMGetMemCount.getAndIncrement();
         }
         else {
 
@@ -329,7 +338,8 @@ public class RequestHandler implements Runnable{
                 }
             }
             long endTimeMemcachedMGet = System.nanoTime()-startTimeMemcachedMGet;
-            timeInMGetMem.add(endTimeMemcachedMGet);
+            timeInMGetMem.addAndGet(endTimeMemcachedMGet);
+            timeInMGetMemCount.getAndIncrement();
             result.append("END" +"\r\n");
             try{
                 if (Params.verbose) {
@@ -345,7 +355,8 @@ public class RequestHandler implements Runnable{
             }
         }
         long endTimeInMGet = System.nanoTime()-startTimeInMGet;
-        timeInMGet.add(endTimeInMGet);
+        timeInMGet.addAndGet(endTimeInMGet);
+        timeInMGetCount.getAndIncrement();
     }
     private static List<Socket> getSockets(){
         return initializedServerSockets.get();

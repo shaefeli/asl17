@@ -1,80 +1,65 @@
 package ch.ethz.asltest;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.TimerTask;
+import java.util.*;
 
 /**
  * Created by Simon on 27.10.17.
  */
 public class StatisticsAggregator extends TimerTask {
     public void run() {
-        Set<Long> timesQueue = new HashSet<>(RequestHandler.timeInQueue);
-        RequestHandler.timeInQueue = RequestHandler.forSetQueue.newKeySet();
+        long timeInQueue = RequestHandler.timeInQueue.getAndSet(0);
+        int timeInQueueCount = RequestHandler.timeInQueueCount.getAndSet(0);
+
         int nrGets = RequestHandler.nrGets.getAndSet(0);
         int nrSets = RequestHandler.nrSets.getAndSet(0);
         int nrMGets = RequestHandler.nrMGets.getAndSet(0);
-        Set<Integer> queueLengths = new HashSet<>(QueueHandler.queueLength);
-        QueueHandler.queueLength = QueueHandler.forSetQueueLength.newKeySet();
-        Set<Long> parsingTimes = new HashSet<>(MyMiddleware.parseTime);
-        QueueHandler.queueLength = MyMiddleware.forSetParse.newKeySet();
-        Set<Long> getTimes = new HashSet<>(RequestHandler.timeInGet);
-        RequestHandler.timeInGet = RequestHandler.forSetGet.newKeySet();
-        Set<Long> setTimes = new HashSet<>(RequestHandler.timeInSet);
-        RequestHandler.timeInSet = RequestHandler.forSetSet.newKeySet();
-        Set<Long> mgetTimes = new HashSet<>(RequestHandler.timeInMGet);
-        RequestHandler.timeInMGet = RequestHandler.forSetMemMGet.newKeySet();
-        Set<Long> mgetMemTimes = new HashSet<>(RequestHandler.timeInMGetMem);
-        RequestHandler.timeInMGetMem = RequestHandler.forSetMemMGet.newKeySet();
 
-        setOpTimes(getTimes,setTimes,mgetTimes,mgetMemTimes);
-        setParseTime(parsingTimes);
-        setQueueTime(timesQueue);
-        setQueueLength(queueLengths);
-        updateValues(nrGets, nrSets, nrMGets);
+        int queueLength = QueueHandler.queueLength.getAndSet(0);
+        int queueLengthCount = QueueHandler.queueLengthCount.getAndSet(0);
+
+        long parsingTimes = MyMiddleware.parseTime.getAndSet(0);
+        int parsingTimesCount = MyMiddleware.parseTimeCount.getAndSet(0);
+
+        long getTimes = RequestHandler.timeInGet.getAndSet(0);
+        int getTimesCount = RequestHandler.timeInGetCount.getAndSet(0);
+
+        long setTimes = RequestHandler.timeInSet.getAndSet(0);
+        int setTimesCount = RequestHandler.timeInSetCount.getAndSet(0);
+
+        long mgetTimes = RequestHandler.timeInMGet.getAndSet(0);
+        int mgetTimesCount = RequestHandler.timeInMGetCount.getAndSet(0);
+
+        long mgetMemTimes = RequestHandler.timeInMGetMem.getAndSet(0);
+        int mgetMemTimesCount = RequestHandler.timeInMGetMemCount.getAndSet(0);
+
+        Statistics.nrMGets.add(nrMGets);
+        Statistics.nrGets.add(nrGets);
+        Statistics.nrSets.add(nrSets);
+        Statistics.timeInQueue.add(computeAverage(timeInQueue,timeInQueueCount));
+        Statistics.queueLength.add(computeAverage(queueLength,queueLengthCount));
+        Statistics.parsingTime.add(computeAverage(parsingTimes,parsingTimesCount));
+        Statistics.getTime.add(computeAverage(getTimes,getTimesCount));
+        Statistics.setTime.add(computeAverage(setTimes,setTimesCount));
+        Statistics.mgetTime.add(computeAverage(mgetTimes,mgetTimesCount));
+        Statistics.mgetMemTime.add(computeAverage(mgetMemTimes,mgetMemTimesCount));
+
+
+
     }
-
-    private void updateValues(int nrG, int nrS, int nrMG) {
-        Statistics.nrGets.add(nrG);
-        Statistics.nrSets.add(nrS);
-        Statistics.nrMGets.add(nrMG);
-    }
-
-    private long average(Set<Long> set){
-        long sum = 0;
-        for (long i : set) {
-            sum += i;
+    private long computeAverage(long a, int count){
+        if(count == 0){
+            return 0;
         }
-        if(set.size()!=0){
-            return sum/set.size();
-        }
-        return 0;
-
-    }
-    private void setOpTimes(Set<Long> gets, Set<Long> sets, Set<Long> mgets, Set<Long> mMemgets){
-        Statistics.getTime.add(average(gets));
-        Statistics.setTime.add(average(sets));
-        Statistics.mgetTime.add(average(mgets));
-        Statistics.mgetMemTime.add(average(mMemgets));
-
-    }
-    private void setQueueTime(Set<Long> times) {
-          Statistics.timeInQueue.add(average(times));
-    }
-
-    private void setQueueLength(Set<Integer> lengths) {
-        if (lengths.size() != 0) {
-            int sum = 0;
-            for (int i : lengths) {
-                sum += i;
-            }
-            int average = sum / lengths.size();
-            Statistics.queueLength.add(average);
+        else{
+            return a/count;
         }
     }
-
-    private void setParseTime(Set<Long> parseTimes) {
-            Statistics.parsingTime.add(average(parseTimes));
-
+    private int computeAverage(int a, int count){
+        if(count == 0){
+            return 0;
+        }
+        else{
+            return a/count;
+        }
     }
 }

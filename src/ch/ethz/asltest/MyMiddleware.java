@@ -11,14 +11,18 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by Simon on 29.09.17.
  */
 public class MyMiddleware implements Runnable{
     //For statistics
-    public static ConcurrentHashMap forSetParse = new ConcurrentHashMap<>();
-    public static Set<Long> parseTime = forSetParse.newKeySet();
+    public static AtomicInteger parseTimeCount = new AtomicInteger(0);
+    public static AtomicLong parseTime = new AtomicLong(0);
+    private int numThreads;
+    private boolean readSharded;
 
     private QueueHandler queueHandler;
     private Selector connectionSelector;
@@ -40,6 +44,8 @@ public class MyMiddleware implements Runnable{
             }
         });
 
+        this.numThreads=numThreadsPTP;
+        this.readSharded=readSharded;
         Params.nrServers = mcAddresses.size();
         Params.shardedRead = readSharded;
         Params.mcAdresses = mcAddresses;
@@ -70,16 +76,16 @@ public class MyMiddleware implements Runnable{
         }
 
         //Statistics related
-        Statistics.timeInQueue = new HashSet<>();
-        Statistics.nrGets = new HashSet<>();
-        Statistics.nrSets = new HashSet<>();
-        Statistics.nrMGets = new HashSet<>();
-        Statistics.queueLength = new HashSet<>();
-        Statistics.parsingTime = new HashSet<>();
-        Statistics.getTime = new HashSet<>();
-        Statistics.setTime = new HashSet<>();
-        Statistics.mgetTime = new HashSet<>();
-        Statistics.mgetMemTime = new HashSet<>();
+        Statistics.timeInQueue = new ArrayList<>();
+        Statistics.nrGets = new ArrayList<>();
+        Statistics.nrSets = new ArrayList<>();
+        Statistics.nrMGets = new ArrayList<>();
+        Statistics.queueLength = new ArrayList<>();
+        Statistics.parsingTime = new ArrayList<>();
+        Statistics.getTime = new ArrayList<>();
+        Statistics.setTime = new ArrayList<>();
+        Statistics.mgetTime = new ArrayList<>();
+        Statistics.mgetMemTime = new ArrayList<>();
         Timer timer = new Timer();
         timer.schedule(new StatisticsAggregator(),0,Statistics.timeWindowStat*1000);
     }
@@ -119,7 +125,8 @@ public class MyMiddleware implements Runnable{
                             long startParsingTime = System.nanoTime();
                             Request r = new Request(readFromClient);
                             long endParsingTime = System.nanoTime()-startParsingTime;
-                            parseTime.add(endParsingTime);
+                            parseTime.addAndGet(endParsingTime);
+                            parseTimeCount.getAndIncrement();
                             queueHandler.putToQueue(r, clientSocket);
                         }
                     }
@@ -138,18 +145,18 @@ public class MyMiddleware implements Runnable{
         {
             FileWriter fstream = new FileWriter(Statistics.fileName, true);
             out = new BufferedWriter(fstream);
-            out.write("Configuration :\nnrThreads: toadd to fields of class\n...\n");
-            out.write("Times in queue "+Statistics.timeInQueue+"\n");
-            out.write("Parsing times "+Statistics.parsingTime+"\n");
-            out.write("Times in get "+Statistics.getTime+"\n");
-            out.write("Times in set "+Statistics.setTime+"\n");
-            out.write("Times in mget "+Statistics.mgetTime+"\n");
-            out.write("Times in mget only memcached part "+Statistics.mgetMemTime+"\n");
-            out.write("Queue lenghts "+Statistics.queueLength+"\n");
-            out.write("Number of gets "+Statistics.nrGets+"\n");
-            out.write("Number of sets"+Statistics.nrSets+"\n");
-            out.write("Number of mgets"+Statistics.nrMGets+"\n");
-            out.write("\n\n\n\n\n");
+            out.write("Configuration : nrThreads: "+numThreads+" ,nrServers: "+Params.nrServers+" ,read sharded: "+this.readSharded+"\n");
+            out.write("Times in queue ,"+printList(Statistics.timeInQueue)+"\n");
+            out.write("Parsing times ,"+printList(Statistics.parsingTime)+"\n");
+            out.write("Times in get ,"+printList(Statistics.getTime)+"\n");
+            out.write("Times in set ,"+printList(Statistics.setTime)+"\n");
+            out.write("Times in mget ,"+printList(Statistics.mgetTime)+"\n");
+            out.write("Times in mget only memcached part ,"+printList(Statistics.mgetMemTime)+"\n");
+            out.write("Queue lenghts ,"+printList(Statistics.queueLength)+"\n");
+            out.write("Number of gets ,"+printList(Statistics.nrGets)+"\n");
+            out.write("Number of sets ,"+printList(Statistics.nrSets)+"\n");
+            out.write("Number of mgets ,"+printList(Statistics.nrMGets)+"\n");
+            out.write("\n\n");
 
 
         }
@@ -168,6 +175,14 @@ public class MyMiddleware implements Runnable{
 
             }
         }
+    }
+    private <T> String printList(List<T> set){
+        StringBuilder s = new StringBuilder();
+        for(T elem : set){
+            s.append(elem);
+            s.append(",");
+        }
+        return s.toString();
     }
 
 

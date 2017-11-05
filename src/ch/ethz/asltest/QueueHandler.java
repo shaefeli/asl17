@@ -4,6 +4,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by Simon on 06.10.17.
@@ -11,8 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class QueueHandler {
     public ThreadPoolExecutor workerThreadPool;
     //Statistics related
-    public static ConcurrentHashMap forSetQueueLength = new ConcurrentHashMap<>();
-    public static Set<Integer> queueLength = forSetQueueLength.newKeySet();
+    public static AtomicInteger queueLengthCount = new AtomicInteger(0);
+    public static AtomicInteger queueLength = new AtomicInteger(0);
 
     public QueueHandler(int numThreadsPTP){
         //Note that we use a LinkedBlockingQueue, here since it does exactly what we want.
@@ -28,7 +29,8 @@ public class QueueHandler {
             System.out.println(workerThreadPool.getActiveCount());
         }
         workerThreadPool.execute(new RequestHandler(request, clientSocket));
-        queueLength.add(sizeOfQueue());
+        queueLength.addAndGet(sizeOfQueue());
+        queueLengthCount.getAndIncrement();
     }
     public  void putToQueueInit(Request request){
         //Put the request to queue and execute it (after waiting in the queue), for initilaizing the threads
