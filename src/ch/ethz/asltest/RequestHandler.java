@@ -22,6 +22,9 @@ public class RequestHandler implements Runnable{
     public static AtomicInteger timeInQueueCount = new AtomicInteger(0);
     public static AtomicLong timeInQueue = new AtomicLong(0);
 
+    public static AtomicInteger serviceTimeCount = new AtomicInteger(0);
+    public static AtomicLong serviceTime = new AtomicLong(0);
+
     public static AtomicInteger timeInGetCount = new AtomicInteger(0);
     public static AtomicLong timeInGet = new AtomicLong(0);
 
@@ -34,11 +37,15 @@ public class RequestHandler implements Runnable{
     public static AtomicInteger timeInMGetMemCount = new AtomicInteger(0);
     public static AtomicLong timeInMGetMem = new AtomicLong(0);
 
+    public static AtomicInteger parseTimeCount = new AtomicInteger(0);
+    public static AtomicLong parseTime = new AtomicLong(0);
+
     public static AtomicInteger nrGets = new AtomicInteger(0);
     public static AtomicInteger nrSets = new AtomicInteger(0);
     public static AtomicInteger nrMGets = new AtomicInteger(0);
 
     //varaiables for executing thread
+    private PreRequest prerequest;
     private Request request;
     private SocketChannel clientSocket;
     private static int serverToSendGet = 0;    //The round-robin for handling the get requests
@@ -111,8 +118,9 @@ public class RequestHandler implements Runnable{
     };
 
     //Used to treat normal requests
-    public RequestHandler(Request request, SocketChannel clientSocket){
-        this.request = request;
+    public RequestHandler(PreRequest prerequest, SocketChannel clientSocket){
+        this.request = new Request(RequestType.UNKNOWN);
+        this.prerequest = prerequest;
         this.clientSocket = clientSocket;
     }
 
@@ -122,22 +130,34 @@ public class RequestHandler implements Runnable{
     }
 
     public void run(){
-       if(Params.verbose){
-           System.out.println("Thread number "+Thread.currentThread().getId()+ " handles request :"+request.toString());
-       }
-        long endTimeInqueue = System.nanoTime()-request.startTimeInQueue;
         if(request.requestType != RequestType.INIT){
+            long endTimeInqueue = System.nanoTime()-prerequest.startingTimeQueue;
+            long startParsingTime = System.nanoTime();
+            request = new Request(prerequest.toParse);
+            long endParsingTime = System.nanoTime()-startParsingTime;
+            parseTime.addAndGet(endParsingTime);
+            parseTimeCount.getAndIncrement();
             timeInQueue.getAndAdd(endTimeInqueue);
             timeInQueueCount.getAndIncrement();
         }
+
+       if(Params.verbose){
+           System.out.println("Thread number "+Thread.currentThread().getId()+ " handles request :"+request.toString());
+       }
         if(request.requestType == RequestType.SET){
             nrSets.getAndIncrement();
             handleSet(request);
+            long endServiceTime = System.nanoTime()-request.startServiceTime;
+            serviceTime.getAndAdd(endServiceTime);
+            serviceTimeCount.getAndIncrement();
         }
 
         else if(request.requestType == RequestType.GET){
             nrGets.getAndIncrement();
             handleGet(request);
+            long endServiceTime = System.nanoTime()-request.startServiceTime;
+            serviceTime.getAndAdd(endServiceTime);
+            serviceTimeCount.getAndIncrement();
         }
         else if (request.requestType == RequestType.INIT){
             getSockets();   //This is done so that the ThreadLocal gets initialized;
@@ -146,6 +166,9 @@ public class RequestHandler implements Runnable{
         else if(request.requestType == RequestType.MGET){
             nrMGets.getAndIncrement();
             handleMultiGet(request);
+            long endServiceTime = System.nanoTime()-request.startServiceTime;
+            serviceTime.getAndAdd(endServiceTime);
+            serviceTimeCount.getAndIncrement();
         }
 
         //Unknown request
@@ -161,7 +184,6 @@ public class RequestHandler implements Runnable{
                 System.err.println("Impossible send back to client");
                 e.printStackTrace();
             }
-
         }
     }
     private void handleSet(Request request){

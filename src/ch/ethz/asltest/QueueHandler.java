@@ -22,13 +22,13 @@ public class QueueHandler {
         workerThreadPool = new ThreadPoolExecutor(numThreadsPTP,numThreadsPTP, Params.keepAliveTime, TimeUnit.SECONDS,new LinkedBlockingQueue<>());
     }
 
-    public void putToQueue(Request request, SocketChannel clientSocket){
+    public void putToQueue(PreRequest prerequest, SocketChannel clientSocket){
         //Put the request to queue and execute it (after waiting in the queue)
         if(Params.verbose){
             System.out.println("Size of queue: "+sizeOfQueue());
             System.out.println(workerThreadPool.getActiveCount());
         }
-        workerThreadPool.execute(new RequestHandler(request, clientSocket));
+        workerThreadPool.execute(new RequestHandler(prerequest, clientSocket));
         queueLength.addAndGet(sizeOfQueue());
         queueLengthCount.getAndIncrement();
     }

@@ -10,17 +10,12 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by Simon on 29.09.17.
  */
 public class MyMiddleware implements Runnable{
-    //For statistics
-    public static AtomicInteger parseTimeCount = new AtomicInteger(0);
-    public static AtomicLong parseTime = new AtomicLong(0);
+
     private int numThreads;
     private boolean readSharded;
 
@@ -77,6 +72,7 @@ public class MyMiddleware implements Runnable{
 
         //Statistics related
         Statistics.timeInQueue = new ArrayList<>();
+        Statistics.serviceTime = new ArrayList<>();
         Statistics.nrGets = new ArrayList<>();
         Statistics.nrSets = new ArrayList<>();
         Statistics.nrMGets = new ArrayList<>();
@@ -122,12 +118,7 @@ public class MyMiddleware implements Runnable{
                         else {
                             String readFromClient = new String(bufferFromClient.array()).trim();
                             //measure time to parse a request
-                            long startParsingTime = System.nanoTime();
-                            Request r = new Request(readFromClient);
-                            long endParsingTime = System.nanoTime()-startParsingTime;
-                            parseTime.addAndGet(endParsingTime);
-                            parseTimeCount.getAndIncrement();
-                            queueHandler.putToQueue(r, clientSocket);
+                            queueHandler.putToQueue(new PreRequest(readFromClient), clientSocket);
                         }
                     }
                     connectionIterator.remove();
@@ -148,6 +139,7 @@ public class MyMiddleware implements Runnable{
             out.write("Configuration : nrThreads: "+numThreads+" ,nrServers: "+Params.nrServers+" ,read sharded: "+this.readSharded+"\n");
             out.write("Times in queue ,"+printList(Statistics.timeInQueue)+"\n");
             out.write("Parsing times ,"+printList(Statistics.parsingTime)+"\n");
+            out.write("service times ,"+printList(Statistics.serviceTime)+"\n");
             out.write("Times in get ,"+printList(Statistics.getTime)+"\n");
             out.write("Times in set ,"+printList(Statistics.setTime)+"\n");
             out.write("Times in mget ,"+printList(Statistics.mgetTime)+"\n");

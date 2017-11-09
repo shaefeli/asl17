@@ -9,6 +9,7 @@ public class Statistics {
     public static String fileName = "statistics.txt";
     public static int timeWindowStat = 1;
     public static List<Long> timeInQueue;
+    public static List<Long> serviceTime;
     public static List<Long> parsingTime;
     public static List<Long> getTime;
     public static List<Long> setTime;

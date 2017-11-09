@@ -10,6 +10,9 @@ public class StatisticsAggregator extends TimerTask {
         long timeInQueue = RequestHandler.timeInQueue.getAndSet(0);
         int timeInQueueCount = RequestHandler.timeInQueueCount.getAndSet(0);
 
+        long serviceTime = RequestHandler.serviceTime.getAndSet(0);
+        int serviceTimeCount = RequestHandler.serviceTimeCount.getAndSet(0);
+
         int nrGets = RequestHandler.nrGets.getAndSet(0);
         int nrSets = RequestHandler.nrSets.getAndSet(0);
         int nrMGets = RequestHandler.nrMGets.getAndSet(0);
@@ -17,8 +20,8 @@ public class StatisticsAggregator extends TimerTask {
         int queueLength = QueueHandler.queueLength.getAndSet(0);
         int queueLengthCount = QueueHandler.queueLengthCount.getAndSet(0);
 
-        long parsingTimes = MyMiddleware.parseTime.getAndSet(0);
-        int parsingTimesCount = MyMiddleware.parseTimeCount.getAndSet(0);
+        long parsingTimes = RequestHandler.parseTime.getAndSet(0);
+        int parsingTimesCount = RequestHandler.parseTimeCount.getAndSet(0);
 
         long getTimes = RequestHandler.timeInGet.getAndSet(0);
         int getTimesCount = RequestHandler.timeInGetCount.getAndSet(0);
@@ -35,6 +38,7 @@ public class StatisticsAggregator extends TimerTask {
         Statistics.nrMGets.add(nrMGets);
         Statistics.nrGets.add(nrGets);
         Statistics.nrSets.add(nrSets);
+        Statistics.serviceTime.add(computeAverage(serviceTime,serviceTimeCount));
         Statistics.timeInQueue.add(computeAverage(timeInQueue,timeInQueueCount));
         Statistics.queueLength.add(computeAverage(queueLength,queueLengthCount));
         Statistics.parsingTime.add(computeAverage(parsingTimes,parsingTimesCount));
@@ -42,9 +46,6 @@ public class StatisticsAggregator extends TimerTask {
         Statistics.setTime.add(computeAverage(setTimes,setTimesCount));
         Statistics.mgetTime.add(computeAverage(mgetTimes,mgetTimesCount));
         Statistics.mgetMemTime.add(computeAverage(mgetMemTimes,mgetMemTimesCount));
-
-
-
     }
     private long computeAverage(long a, int count){
         if(count == 0){
