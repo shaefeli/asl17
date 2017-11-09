@@ -16,6 +16,7 @@ public class Statistics {
     public static List<Long> mgetTime;
     public static List<Long> mgetMemTime;
     public static List<Integer> queueLength;
+    public static List<Integer> throughput;
     public static List<Integer> nrGets;
     public static List<Integer> nrSets;
     public static List<Integer> nrMGets;

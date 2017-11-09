@@ -38,6 +38,7 @@ public class StatisticsAggregator extends TimerTask {
         Statistics.nrMGets.add(nrMGets);
         Statistics.nrGets.add(nrGets);
         Statistics.nrSets.add(nrSets);
+        Statistics.throughput.add((nrMGets+nrGets+nrSets)/Statistics.timeWindowStat);
         Statistics.serviceTime.add(computeAverage(serviceTime,serviceTimeCount));
         Statistics.timeInQueue.add(computeAverage(timeInQueue,timeInQueueCount));
         Statistics.queueLength.add(computeAverage(queueLength,queueLengthCount));

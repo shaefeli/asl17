@@ -75,6 +75,7 @@ public class MyMiddleware implements Runnable{
         Statistics.serviceTime = new ArrayList<>();
         Statistics.nrGets = new ArrayList<>();
         Statistics.nrSets = new ArrayList<>();
+        Statistics.throughput = new ArrayList<>();
         Statistics.nrMGets = new ArrayList<>();
         Statistics.queueLength = new ArrayList<>();
         Statistics.parsingTime = new ArrayList<>();
