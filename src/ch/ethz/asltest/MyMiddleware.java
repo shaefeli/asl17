@@ -34,6 +34,7 @@ public class MyMiddleware implements Runnable{
                     //Here we print all statistics
                     printAllStatistics();
                 } catch(Exception e){
+                    e.printStackTrace();
                     System.err.println("Error while shutting down");
                 }
             }
@@ -132,6 +133,32 @@ public class MyMiddleware implements Runnable{
     }
 
     private void printAllStatistics(){
+        Statistics.timeInQueue.removeIf(p -> p == 0);
+        Statistics.parsingTime.removeIf(p -> p == 0);
+        Statistics.serviceTime.removeIf(p -> p == 0);
+        Statistics.throughput.removeIf(p -> p == 0);
+        Statistics.getTime.removeIf(p -> p == 0);
+        Statistics.setTime.removeIf(p -> p == 0);
+        Statistics.mgetTime.removeIf(p -> p == 0);
+        Statistics.mgetMemTime.removeIf(p -> p == 0);
+        Statistics.queueLength.removeIf(p -> p == 0);
+        Statistics.nrGets.removeIf(p -> p == 0);
+        Statistics.nrSets.removeIf(p -> p == 0);
+        Statistics.nrMGets.removeIf(p -> p == 0);
+
+        remove(Statistics.timeInQueue);
+        remove(Statistics.parsingTime);
+        remove(Statistics.serviceTime);
+        remove(Statistics.throughput);
+        remove(Statistics.getTime);
+        remove(Statistics.setTime);
+        remove(Statistics.mgetTime);
+        remove(Statistics.mgetMemTime);
+        remove(Statistics.queueLength);
+        remove(Statistics.nrGets);
+        remove(Statistics.nrSets);
+        remove(Statistics.nrMGets);
+
         BufferedWriter out = null;
         try
         {
@@ -141,6 +168,7 @@ public class MyMiddleware implements Runnable{
             out.write("Times in queue ,"+printList(Statistics.timeInQueue)+"\n");
             out.write("Parsing times ,"+printList(Statistics.parsingTime)+"\n");
             out.write("service times ,"+printList(Statistics.serviceTime)+"\n");
+            out.write("throughput ,"+printList(Statistics.throughput)+"\n");
             out.write("Times in get ,"+printList(Statistics.getTime)+"\n");
             out.write("Times in set ,"+printList(Statistics.setTime)+"\n");
             out.write("Times in mget ,"+printList(Statistics.mgetTime)+"\n");
@@ -149,6 +177,20 @@ public class MyMiddleware implements Runnable{
             out.write("Number of gets ,"+printList(Statistics.nrGets)+"\n");
             out.write("Number of sets ,"+printList(Statistics.nrSets)+"\n");
             out.write("Number of mgets ,"+printList(Statistics.nrMGets)+"\n");
+
+            out.write("S Times in queue ,"+averageLong(Statistics.timeInQueue)+" / "+stdDeviationLong(Statistics.timeInQueue)+"\n");
+            out.write("S Parsing times ,"+averageLong(Statistics.parsingTime)+" / "+stdDeviationLong(Statistics.parsingTime)+"\n");
+            out.write("S service times ,"+averageLong(Statistics.serviceTime)+" / "+stdDeviationLong(Statistics.serviceTime)+"\n");
+            out.write("S throughput ,"+average(Statistics.throughput)+" / "+stdDeviation(Statistics.throughput)+"\n");
+            out.write("S Times in get ,"+averageLong(Statistics.getTime)+" / "+stdDeviationLong(Statistics.getTime)+"\n");
+            out.write("S Times in set ,"+averageLong(Statistics.setTime)+" / "+stdDeviationLong(Statistics.setTime)+"\n");
+            out.write("S Times in mget ,"+averageLong(Statistics.mgetTime)+" / "+stdDeviationLong(Statistics.mgetTime)+"\n");
+            out.write("S Times in mget only memcached part ,"+averageLong(Statistics.mgetMemTime)+" / "+stdDeviationLong(Statistics.mgetMemTime)+"\n");
+            out.write("S Queue lenghts ,"+average(Statistics.queueLength)+" / "+stdDeviation(Statistics.queueLength)+"\n");
+            out.write("S Number of gets ,"+average(Statistics.nrGets)+" / "+stdDeviation(Statistics.nrGets)+"\n");
+            out.write("S Number of sets ,"+average(Statistics.nrSets)+" / "+stdDeviation(Statistics.nrSets)+"\n");
+            out.write("S Number of mgets ,"+average(Statistics.nrMGets)+" / "+stdDeviation(Statistics.nrMGets)+"\n");
+
             out.write("\n\n");
 
 
@@ -176,6 +218,54 @@ public class MyMiddleware implements Runnable{
             s.append(",");
         }
         return s.toString();
+    }
+
+    private <T> List<T> remove(List<T> list){
+
+        if(list.size()!= 0){
+            list.remove(0);
+            list.remove(0);
+            list.remove(0);
+            list.remove(list.size()-1);
+            return list;
+        }
+        else{
+            return list;
+        }
+    }
+    private double average(List<Integer>  list){
+        double sum = 0;
+        for(int i:list){
+            sum+= i;
+        }
+        return sum/list.size();
+
+    }
+
+    private double stdDeviation(List<Integer> list){
+        double average = average(list);
+        double sumDiffSquare = 0;
+        for(long i : list){
+            sumDiffSquare+=Math.pow(i-average,2);
+        }
+        return Math.sqrt(sumDiffSquare/(list.size()-1));
+    }
+    private double averageLong(List<Long>  list){
+        double sum = 0;
+        for(long i:list){
+            sum+= i;
+        }
+        return sum/list.size();
+
+    }
+
+    private double stdDeviationLong(List<Long> list){
+        double average = averageLong(list);
+        double sumDiffSquare = 0;
+        for(long i : list){
+            sumDiffSquare+=Math.pow(i-average,2);
+        }
+        return Math.sqrt(sumDiffSquare/(list.size()-1));
     }
 
 
