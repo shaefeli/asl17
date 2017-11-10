@@ -44,6 +44,8 @@ public class RequestHandler implements Runnable{
     public static AtomicInteger nrSets = new AtomicInteger(0);
     public static AtomicInteger nrMGets = new AtomicInteger(0);
 
+    public static AtomicInteger nrMissesGet = new AtomicInteger(0);
+
     //varaiables for executing thread
     private PreRequest prerequest;
     private Request request;
@@ -261,6 +263,11 @@ public class RequestHandler implements Runnable{
 
             totalToSendBack.append(newLine);
             totalToSendBack.append("\r\n");
+
+            //In this case we are in a miss
+            if(newLine.equals("END")){
+                nrMissesGet.getAndIncrement();
+            }
             while(!newLine.equals("END")){
                 newLine = din.readLine();
                 totalToSendBack.append(newLine);

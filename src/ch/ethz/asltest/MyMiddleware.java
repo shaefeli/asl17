@@ -80,6 +80,7 @@ public class MyMiddleware implements Runnable{
         Statistics.serviceTime = new ArrayList<>();
         Statistics.nrGets = new ArrayList<>();
         Statistics.nrSets = new ArrayList<>();
+        Statistics.nrMissesGets = new ArrayList<>();
         Statistics.throughput = new ArrayList<>();
         Statistics.nrMGets = new ArrayList<>();
         Statistics.queueLength = new ArrayList<>();
@@ -152,6 +153,8 @@ public class MyMiddleware implements Runnable{
         Statistics.nrGets.removeIf(p -> p == 0);
         Statistics.nrSets.removeIf(p -> p == 0);
         Statistics.nrMGets.removeIf(p -> p == 0);
+        Statistics.nrMGets.removeIf(p -> p == 0);
+        Statistics.nrMissesGets.removeIf(p -> p == 0);
 
         Statistics.timeInQueue = remove(Statistics.timeInQueue);
         Statistics.parsingTime = remove(Statistics.parsingTime);
@@ -165,6 +168,7 @@ public class MyMiddleware implements Runnable{
         Statistics.nrGets = remove(Statistics.nrGets);
         Statistics.nrSets = remove(Statistics.nrSets);
         Statistics.nrMGets = remove(Statistics.nrMGets);
+        Statistics.nrMissesGets = remove(Statistics.nrMissesGets);
 
         BufferedWriter out = null;
         try
@@ -215,6 +219,9 @@ public class MyMiddleware implements Runnable{
                     else if(line.startsWith("Number of mgets")){
                         addedLines.add(line+","+average(Statistics.nrMGets));
                     }
+                    else if(line.startsWith("Number of misses get")){
+                        addedLines.add(line+","+average(Statistics.nrMissesGets));
+                    }
                     //Adding to the standard
                     if(line.startsWith("std Times in queue")){
                         addedLines.add(line+","+stdDeviationLong(Statistics.timeInQueue));
@@ -252,6 +259,9 @@ public class MyMiddleware implements Runnable{
                     else if(line.startsWith("std Number of mgets")){
                         addedLines.add(line+","+stdDeviation(Statistics.nrMGets));
                     }
+                    else if(line.startsWith("std Number of misses get")){
+                        addedLines.add(line+","+stdDeviation(Statistics.nrMissesGets));
+                    }
                     //else do nothing
 
                 }
@@ -275,6 +285,7 @@ public class MyMiddleware implements Runnable{
                 out.write("Number of gets ," + average(Statistics.nrGets) + "\n");
                 out.write("Number of sets ," + average(Statistics.nrSets) + "\n");
                 out.write("Number of mgets ," + average(Statistics.nrMGets) + "\n");
+                out.write("Number of misses get ," + average(Statistics.nrMissesGets) + "\n");
 
                 out.write("std Times in queue ," + stdDeviationLong(Statistics.timeInQueue) + "\n");
                 out.write("std Parsing times ," + stdDeviationLong(Statistics.parsingTime) + "\n");
@@ -288,8 +299,11 @@ public class MyMiddleware implements Runnable{
                 out.write("std Number of gets ," + stdDeviation(Statistics.nrGets) + "\n");
                 out.write("std Number of sets ," + stdDeviation(Statistics.nrSets) + "\n");
                 out.write("std Number of mgets ," + stdDeviation(Statistics.nrMGets) + "\n");
+                out.write("std Number of misses get ," + stdDeviation(Statistics.nrMissesGets) + "\n");
 
                 out.write("\n\n");
+
+                System.out.println(printList(Statistics.nrMissesGets));
             }
 
         }

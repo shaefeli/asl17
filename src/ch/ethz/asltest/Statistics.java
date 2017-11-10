@@ -20,4 +20,5 @@ public class Statistics {
     public static List<Integer> nrGets;
     public static List<Integer> nrSets;
     public static List<Integer> nrMGets;
+    public static List<Integer> nrMissesGets;
 }

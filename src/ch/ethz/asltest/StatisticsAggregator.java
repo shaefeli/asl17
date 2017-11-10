@@ -16,6 +16,7 @@ public class StatisticsAggregator extends TimerTask {
         int nrGets = RequestHandler.nrGets.getAndSet(0);
         int nrSets = RequestHandler.nrSets.getAndSet(0);
         int nrMGets = RequestHandler.nrMGets.getAndSet(0);
+        int nrMissesGets = RequestHandler.nrMissesGet.getAndSet(0);
 
         int queueLength = QueueHandler.queueLength.getAndSet(0);
         int queueLengthCount = QueueHandler.queueLengthCount.getAndSet(0);
@@ -38,6 +39,7 @@ public class StatisticsAggregator extends TimerTask {
         Statistics.nrMGets.add(nrMGets);
         Statistics.nrGets.add(nrGets);
         Statistics.nrSets.add(nrSets);
+        Statistics.nrMissesGets.add(nrMissesGets);
         Statistics.throughput.add((nrMGets+nrGets+nrSets)/Statistics.timeWindowStat);
         Statistics.serviceTime.add(computeAverage(serviceTime,serviceTimeCount));
         Statistics.timeInQueue.add(computeAverage(timeInQueue,timeInQueueCount));
