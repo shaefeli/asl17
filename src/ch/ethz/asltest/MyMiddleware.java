@@ -1,6 +1,7 @@
 package ch.ethz.asltest;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -9,7 +10,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Simon on 29.09.17.
@@ -132,6 +136,9 @@ public class MyMiddleware implements Runnable{
         }
     }
 
+
+
+
     private void printAllStatistics(){
         Statistics.timeInQueue.removeIf(p -> p == 0);
         Statistics.parsingTime.removeIf(p -> p == 0);
@@ -146,53 +153,144 @@ public class MyMiddleware implements Runnable{
         Statistics.nrSets.removeIf(p -> p == 0);
         Statistics.nrMGets.removeIf(p -> p == 0);
 
-        remove(Statistics.timeInQueue);
-        remove(Statistics.parsingTime);
-        remove(Statistics.serviceTime);
-        remove(Statistics.throughput);
-        remove(Statistics.getTime);
-        remove(Statistics.setTime);
-        remove(Statistics.mgetTime);
-        remove(Statistics.mgetMemTime);
-        remove(Statistics.queueLength);
-        remove(Statistics.nrGets);
-        remove(Statistics.nrSets);
-        remove(Statistics.nrMGets);
+        Statistics.timeInQueue = remove(Statistics.timeInQueue);
+        Statistics.parsingTime = remove(Statistics.parsingTime);
+        Statistics.serviceTime = remove(Statistics.serviceTime);
+        Statistics.throughput = remove(Statistics.throughput);
+        Statistics.getTime = remove(Statistics.getTime);
+        Statistics.setTime = remove(Statistics.setTime);
+        Statistics.mgetTime = remove(Statistics.mgetTime);
+        Statistics.mgetMemTime = remove(Statistics.mgetMemTime);
+        Statistics.queueLength = remove(Statistics.queueLength);
+        Statistics.nrGets = remove(Statistics.nrGets);
+        Statistics.nrSets = remove(Statistics.nrSets);
+        Statistics.nrMGets = remove(Statistics.nrMGets);
 
         BufferedWriter out = null;
         try
         {
-            FileWriter fstream = new FileWriter(Statistics.fileName, true);
-            out = new BufferedWriter(fstream);
-            out.write("Configuration : nrThreads: "+numThreads+" ,nrServers: "+Params.nrServers+" ,read sharded: "+this.readSharded+"\n");
-            out.write("Times in queue ,"+printList(Statistics.timeInQueue)+"\n");
-            out.write("Parsing times ,"+printList(Statistics.parsingTime)+"\n");
-            out.write("service times ,"+printList(Statistics.serviceTime)+"\n");
-            out.write("throughput ,"+printList(Statistics.throughput)+"\n");
-            out.write("Times in get ,"+printList(Statistics.getTime)+"\n");
-            out.write("Times in set ,"+printList(Statistics.setTime)+"\n");
-            out.write("Times in mget ,"+printList(Statistics.mgetTime)+"\n");
-            out.write("Times in mget only memcached part ,"+printList(Statistics.mgetMemTime)+"\n");
-            out.write("Queue lenghts ,"+printList(Statistics.queueLength)+"\n");
-            out.write("Number of gets ,"+printList(Statistics.nrGets)+"\n");
-            out.write("Number of sets ,"+printList(Statistics.nrSets)+"\n");
-            out.write("Number of mgets ,"+printList(Statistics.nrMGets)+"\n");
+            File statF = new File(Statistics.fileName);
+            //append
+            if(statF.exists() && !statF.isDirectory()){
+                List<String> lines = Files.lines(Paths.get(Statistics.fileName)).collect(Collectors.toList());
+                List<String> addedLines = new ArrayList<>();
+                for(String line : lines){
+                    if(line.startsWith("Configuration")){
+                        addedLines.add(line);
+                    }
+                    //Adding to the averages
+                    else if(line.startsWith("Times in queue")){
+                        addedLines.add(line+","+averageLong(Statistics.timeInQueue));
+                    }
+                    else if(line.startsWith("Parsing times")){
+                        addedLines.add(line+","+averageLong(Statistics.parsingTime));
+                    }
+                    else if(line.startsWith("Service times")){
+                        addedLines.add(line+","+averageLong(Statistics.serviceTime));
+                    }
+                    else if(line.startsWith("Throughput")){
+                        addedLines.add(line+","+average(Statistics.throughput));
+                    }
+                    else if(line.startsWith("Times in get")){
+                        addedLines.add(line+","+averageLong(Statistics.getTime));
+                    }
+                    else if(line.startsWith("Times in set")){
+                        addedLines.add(line+","+averageLong(Statistics.setTime));
+                    }
+                    else if(line.startsWith("Times in mget")){
+                        addedLines.add(line+","+averageLong(Statistics.mgetTime));
+                    }
+                    else if(line.startsWith("Times in mget only")){
+                        addedLines.add(line+","+averageLong(Statistics.mgetMemTime));
+                    }
+                    else if(line.startsWith("Queue lengths")){
+                        addedLines.add(line+","+average(Statistics.queueLength));
+                    }
+                    else if(line.startsWith("Number of gets")){
+                        addedLines.add(line+","+average(Statistics.nrGets));
+                    }
+                    else if(line.startsWith("Number of sets")){
+                        addedLines.add(line+","+average(Statistics.nrSets));
+                    }
+                    else if(line.startsWith("Number of mgets")){
+                        addedLines.add(line+","+average(Statistics.nrMGets));
+                    }
+                    //Adding to the standard
+                    if(line.startsWith("std Times in queue")){
+                        addedLines.add(line+","+stdDeviationLong(Statistics.timeInQueue));
+                    }
+                    else if(line.startsWith("std Parsing times")){
+                        addedLines.add(line+","+stdDeviationLong(Statistics.parsingTime));
+                    }
+                    else if(line.startsWith("std Service times")){
+                        addedLines.add(line+","+stdDeviationLong(Statistics.serviceTime));
+                    }
+                    else if(line.startsWith("std Throughput")){
+                        addedLines.add(line+","+stdDeviation(Statistics.throughput));
+                    }
+                    else if(line.startsWith("std Times in get")){
+                        addedLines.add(line+","+stdDeviationLong(Statistics.getTime));
+                    }
+                    else if(line.startsWith("std Times in set")){
+                        addedLines.add(line+","+stdDeviationLong(Statistics.setTime));
+                    }
+                    else if(line.startsWith("std Times in mget")){
+                        addedLines.add(line+","+stdDeviationLong(Statistics.mgetTime));
+                    }
+                    else if(line.startsWith("std Times in mget only")){
+                        addedLines.add(line+","+stdDeviationLong(Statistics.mgetMemTime));
+                    }
+                    else if(line.startsWith("std Queue lengths")){
+                        addedLines.add(line+","+stdDeviation(Statistics.queueLength));
+                    }
+                    else if(line.startsWith("std Number of gets")){
+                        addedLines.add(line+","+stdDeviation(Statistics.nrGets));
+                    }
+                    else if(line.startsWith("std Number of sets")){
+                        addedLines.add(line+","+stdDeviation(Statistics.nrSets));
+                    }
+                    else if(line.startsWith("std Number of mgets")){
+                        addedLines.add(line+","+stdDeviation(Statistics.nrMGets));
+                    }
+                    //else do nothing
 
-            out.write("S Times in queue ,"+averageLong(Statistics.timeInQueue)+" / "+stdDeviationLong(Statistics.timeInQueue)+"\n");
-            out.write("S Parsing times ,"+averageLong(Statistics.parsingTime)+" / "+stdDeviationLong(Statistics.parsingTime)+"\n");
-            out.write("S service times ,"+averageLong(Statistics.serviceTime)+" / "+stdDeviationLong(Statistics.serviceTime)+"\n");
-            out.write("S throughput ,"+average(Statistics.throughput)+" / "+stdDeviation(Statistics.throughput)+"\n");
-            out.write("S Times in get ,"+averageLong(Statistics.getTime)+" / "+stdDeviationLong(Statistics.getTime)+"\n");
-            out.write("S Times in set ,"+averageLong(Statistics.setTime)+" / "+stdDeviationLong(Statistics.setTime)+"\n");
-            out.write("S Times in mget ,"+averageLong(Statistics.mgetTime)+" / "+stdDeviationLong(Statistics.mgetTime)+"\n");
-            out.write("S Times in mget only memcached part ,"+averageLong(Statistics.mgetMemTime)+" / "+stdDeviationLong(Statistics.mgetMemTime)+"\n");
-            out.write("S Queue lenghts ,"+average(Statistics.queueLength)+" / "+stdDeviation(Statistics.queueLength)+"\n");
-            out.write("S Number of gets ,"+average(Statistics.nrGets)+" / "+stdDeviation(Statistics.nrGets)+"\n");
-            out.write("S Number of sets ,"+average(Statistics.nrSets)+" / "+stdDeviation(Statistics.nrSets)+"\n");
-            out.write("S Number of mgets ,"+average(Statistics.nrMGets)+" / "+stdDeviation(Statistics.nrMGets)+"\n");
+                }
+                Files.write(Paths.get(Statistics.fileName), addedLines);
+            }
+            //Create new
+            else {
+                FileWriter fstream = new FileWriter(Statistics.fileName, true);
+                out = new BufferedWriter(fstream);
+                out.write("Configuration : nrThreads: " + numThreads + " ,nrServers: " + Params.nrServers + " ,read sharded: " + this.readSharded + "\n");
 
-            out.write("\n\n");
+                out.write("Times in queue ," + averageLong(Statistics.timeInQueue) + "\n");
+                out.write("Parsing times ," + averageLong(Statistics.parsingTime) + "\n");
+                out.write("Service times ," + averageLong(Statistics.serviceTime) + "\n");
+                out.write("Throughput ," + average(Statistics.throughput) + "\n");
+                out.write("Times in get ," + averageLong(Statistics.getTime) + "\n");
+                out.write("Times in set ," + averageLong(Statistics.setTime) + "\n");
+                out.write("Times in mget ," + averageLong(Statistics.mgetTime) + "\n");
+                out.write("Times in mget only memcached part ," + averageLong(Statistics.mgetMemTime) + "\n");
+                out.write("Queue lenghts ," + average(Statistics.queueLength) + "\n");
+                out.write("Number of gets ," + average(Statistics.nrGets) + "\n");
+                out.write("Number of sets ," + average(Statistics.nrSets) + "\n");
+                out.write("Number of mgets ," + average(Statistics.nrMGets) + "\n");
 
+                out.write("std Times in queue ," + stdDeviationLong(Statistics.timeInQueue) + "\n");
+                out.write("std Parsing times ," + stdDeviationLong(Statistics.parsingTime) + "\n");
+                out.write("std Service times ," + stdDeviationLong(Statistics.serviceTime) + "\n");
+                out.write("std Throughput ," + stdDeviation(Statistics.throughput) + "\n");
+                out.write("std Times in get ," + stdDeviationLong(Statistics.getTime) + "\n");
+                out.write("std Times in set ," + stdDeviationLong(Statistics.setTime) + "\n");
+                out.write("std Times in mget ," + stdDeviationLong(Statistics.mgetTime) + "\n");
+                out.write("std Times in mget only memcached part ," + stdDeviationLong(Statistics.mgetMemTime) + "\n");
+                out.write("std Queue lenghts ," + stdDeviation(Statistics.queueLength) + "\n");
+                out.write("std Number of gets ," + stdDeviation(Statistics.nrGets) + "\n");
+                out.write("std Number of sets ," + stdDeviation(Statistics.nrSets) + "\n");
+                out.write("std Number of mgets ," + stdDeviation(Statistics.nrMGets) + "\n");
+
+                out.write("\n\n");
+            }
 
         }
         catch (IOException e)
@@ -222,7 +320,7 @@ public class MyMiddleware implements Runnable{
 
     private <T> List<T> remove(List<T> list){
 
-        if(list.size()!= 0){
+        if(list.size() > 4){
             list.remove(0);
             list.remove(0);
             list.remove(0);
@@ -230,13 +328,17 @@ public class MyMiddleware implements Runnable{
             return list;
         }
         else{
-            return list;
+            //If the list has only few non zero elements consider it as all 0
+            return new ArrayList<>();
         }
     }
     private double average(List<Integer>  list){
         double sum = 0;
         for(int i:list){
             sum+= i;
+        }
+        if(list.size()==0){
+            return 0;
         }
         return sum/list.size();
 
@@ -248,12 +350,22 @@ public class MyMiddleware implements Runnable{
         for(long i : list){
             sumDiffSquare+=Math.pow(i-average,2);
         }
-        return Math.sqrt(sumDiffSquare/(list.size()-1));
+        if(list.size()==0){
+            return 0;
+        }
+        if(list.size()>1){
+            return Math.sqrt(sumDiffSquare/(list.size()-1));
+        }
+        else return 0;
+
     }
     private double averageLong(List<Long>  list){
         double sum = 0;
         for(long i:list){
             sum+= i;
+        }
+        if(list.size()==0){
+            return 0;
         }
         return sum/list.size();
 
@@ -265,7 +377,13 @@ public class MyMiddleware implements Runnable{
         for(long i : list){
             sumDiffSquare+=Math.pow(i-average,2);
         }
-        return Math.sqrt(sumDiffSquare/(list.size()-1));
+        if(list.size()==0){
+            return 0;
+        }
+        if(list.size()>1){
+            return Math.sqrt(sumDiffSquare/(list.size()-1));
+        }
+        else return 0;
     }
 
 
