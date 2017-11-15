@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-scp -i ~/.ssh/azure shaefeli@shaefeliforaslvms4.westeurope.cloudapp.azure.com:~/code/statistics.txt/home/simon/Documents/ETH/asl/collectedStatFiles 
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms4.westeurope.cloudapp.azure.com:~/code/stats /home/simon/Documents/ETH/asl/collectedStatFiles 
 
-#scp -i ~/.ssh/azure shaefeli@shaefeliforaslvms5.westeurope.cloudapp.azure.com:~/code/mw_01.log /home/simon/Documents/ETH/asl/collectedStatFiles 
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms1.westeurope.cloudapp.azure.com:~/memtier_benchmark-master/statFiles /home/simon/Documents/ETH/asl/collectedStatFiles 
 
 

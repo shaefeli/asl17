@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+testTime=$1
+perClient=$((testTime+7))
+clients=(1 2 3 4)
+threads=(1)
+repetitions=(1 2 3)
+for r in "${repetitions[@]}"
+do
+	for s in "${clients[@]}"
+	do	
+		for t in "${threads[@]}"
+		do
+			./memtier_benchmark --clients=${s} --threads=${t} --port=6800 --protocol=memcache_text --test-time=$testTime --server=52.232.37.2 --hide-histogram >>client0101_AllThreads_client${s}_rep${r}.txt & 
+			./memtier_benchmark --clients=${s} --threads=${t} --port=6800 --protocol=memcache_text --test-time=$testTime --server=52.232.37.2 --hide-histogram >>client0102_AllThreads_client${s}_rep${r}.txt &
+			sleep $perClient
+		done
+	done
+done
+
+
+
+

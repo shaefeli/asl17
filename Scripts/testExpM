@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+testTime=$1
+runTime=$((testTime+6))
+perMWTime=$((runTime+1))
+
+threads=(8 8)
+shardedRead=("true" "false")
+repetitions=(1 2 3)
+for r in "${repetitions[@]}"
+do
+	for s in "${shardedRead[@]}"
+	do	
+		for t in "${threads[@]}"
+		do
+			timeout $runTime java -jar asl-fall17-project.jar -l 0.0.0.0 -p 6800 -t 8 -s true -m 52.174.253.103:3000 &
+			sleep $perMWTime 
+		done
+		mv statistics.txt stats/mw01_AllThreads_shRead${s}_rep${r}.txt
+	done
+done
+
+
+
+
