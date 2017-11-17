@@ -96,6 +96,7 @@ public class MyMiddleware implements Runnable{
     //allocate buffer is 1100, because a key is maximum 5 bytes, there are maximum 10 of them
     //and a value is maximum 1024B => total = 1024*10+5*10 = 102450 + flags and all: 11000.
     public void run(){
+        System.out.println("Ready to serve on port: "+welcomeSocket.toString());
         while (Params.middlewareOn) {
             try {
                 connectionSelector.select();
@@ -333,13 +334,16 @@ public class MyMiddleware implements Runnable{
     }
 
     private <T> List<T> remove(List<T> list){
+        int nrItemsToRemove = 10;
 
-        if(list.size() > 4){
-            list.remove(0);
-            list.remove(0);
-            list.remove(0);
+        if(list.size() > 11){
+            for(int i=0;i<nrItemsToRemove;i++){
+                list.remove(0);
+
+            }
             list.remove(list.size()-1);
             return list;
+
         }
         else{
             //If the list has only few non zero elements consider it as all 0
