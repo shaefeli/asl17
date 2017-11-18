@@ -3,17 +3,20 @@
 testTime=$1
 clients=(1 2 4 8 16 20 24 28 32)
 threads=(2)
-repetitions=(1 2 3)
+MWThread=(8 16 32 64)
 #first write only then read only
 ratios=("1:0" "0:1")
-for ra in "${ratios[@]}"
-do	
-	for t in "${threads[@]}"
-	do
-		for s in "${clients[@]}"
+for mwt in "${MWThread[@]}"
+do
+	for ra in "${ratios[@]}"
+	do	
+		for t in "${threads[@]}"
 		do
-			./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=${s} --threads=${t} --port=3000 --protocol=memcache_text --test-time=$testTime --server=52.142.216.233 --hide-histogram --ratio=${ra} >>statFiles/client01inst1_ratio${ra}.txt &
-			sleep $((testTime+5)) 
+			for s in "${clients[@]}"
+			do
+				./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=${s} --threads=${t} --port=3000 --protocol=memcache_text --test-time=$testTime --server=52.142.216.233 --hide-histogram --ratio=${ra} >>statFiles/client01inst1_ratio${ra}_MWT${mwt}.txt &
+				sleep $((testTime+5)) 
+			done
 		done
 	done
 done

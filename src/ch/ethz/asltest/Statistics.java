@@ -1,5 +1,6 @@
 package ch.ethz.asltest;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -21,4 +22,6 @@ public class Statistics {
     public static List<Integer> nrSets;
     public static List<Integer> nrMGets;
     public static List<Integer> nrMissesGets;
+    public static List<Integer> arrivalRate;
+    public static List<Long>[] serviceTimesPerThread;
 }

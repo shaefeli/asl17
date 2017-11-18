@@ -13,6 +13,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -26,6 +27,9 @@ public class MyMiddleware implements Runnable{
     private QueueHandler queueHandler;
     private Selector connectionSelector;
     private ServerSocketChannel welcomeSocket;
+
+    //For statistics
+    public static AtomicInteger nrArrivals = new AtomicInteger(0);
 
     //Starts the middleware
     public MyMiddleware(String ip, int port, List<String> mcAddresses, int numThreadsPTP, boolean readSharded){
@@ -44,6 +48,7 @@ public class MyMiddleware implements Runnable{
             }
         });
 
+        Params.nrThreads = numThreadsPTP;
         this.numThreads=numThreadsPTP;
         this.readSharded=readSharded;
         Params.nrServers = mcAddresses.size();
@@ -89,6 +94,11 @@ public class MyMiddleware implements Runnable{
         Statistics.setTime = new ArrayList<>();
         Statistics.mgetTime = new ArrayList<>();
         Statistics.mgetMemTime = new ArrayList<>();
+        Statistics.serviceTimesPerThread = new ArrayList [Params.nrThreads];
+        for (int i=0;i<Params.nrThreads;i++){
+            Statistics.serviceTimesPerThread[i] = new ArrayList<>();
+        }
+        Statistics.arrivalRate = new ArrayList<>();
         Timer timer = new Timer();
         timer.schedule(new StatisticsAggregator(),0,Statistics.timeWindowStat*1000);
     }
@@ -126,6 +136,7 @@ public class MyMiddleware implements Runnable{
                         else {
                             String readFromClient = new String(bufferFromClient.array()).trim();
                             //measure time to parse a request
+                            nrArrivals.getAndIncrement();
                             queueHandler.putToQueue(new PreRequest(readFromClient), clientSocket);
                         }
                     }
@@ -156,8 +167,14 @@ public class MyMiddleware implements Runnable{
         Statistics.nrMGets.removeIf(p -> p == 0);
         Statistics.nrMGets.removeIf(p -> p == 0);
         Statistics.nrMissesGets.removeIf(p -> p == 0);
+        Statistics.arrivalRate.removeIf(p -> p== 0);
 
-        Statistics.timeInQueue = remove(Statistics.timeInQueue);
+        for (int i=0;i<Params.nrThreads;i++){
+            Statistics.serviceTimesPerThread[i].removeIf(p -> p == 0);
+            //Statistics.serviceTimesPerThread[i]=remove(Statistics.serviceTimesPerThread[i]);
+        }
+
+        /*Statistics.timeInQueue = remove(Statistics.timeInQueue);
         Statistics.parsingTime = remove(Statistics.parsingTime);
         Statistics.serviceTime = remove(Statistics.serviceTime);
         Statistics.throughput = remove(Statistics.throughput);
@@ -169,7 +186,8 @@ public class MyMiddleware implements Runnable{
         Statistics.nrGets = remove(Statistics.nrGets);
         Statistics.nrSets = remove(Statistics.nrSets);
         Statistics.nrMGets = remove(Statistics.nrMGets);
-        Statistics.nrMissesGets = remove(Statistics.nrMissesGets);
+        Statistics.nrMissesGets = remove(Statistics.nrMissesGets);*/
+        //Statistics.arrivalRate = remove(Statistics.arrivalRate);
 
         BufferedWriter out = null;
         try
@@ -182,6 +200,16 @@ public class MyMiddleware implements Runnable{
                 for(String line : lines){
                     if(line.startsWith("Configuration")){
                         addedLines.add(line);
+                    }
+                    else if(line.startsWith("Thread")){
+                        for (int i=0;i<Params.nrThreads;i++){
+                            if(line.startsWith("Thread "+i)){
+                                addedLines.add(line+","+averageLong(Statistics.serviceTimesPerThread[i]));
+                            }
+                            else if(line.startsWith("Thread std "+i)){
+                                addedLines.add(line+","+stdDeviationLong(Statistics.serviceTimesPerThread[i]));
+                            }
+                        }
                     }
                     //Adding to the averages
                     else if(line.startsWith("Times in queue")){
@@ -223,6 +251,9 @@ public class MyMiddleware implements Runnable{
                     else if(line.startsWith("Number of misses get")){
                         addedLines.add(line+","+average(Statistics.nrMissesGets));
                     }
+                    else if(line.startsWith("Arrival rate")){
+                        addedLines.add(line+","+average(Statistics.arrivalRate));
+                    }
                     //Adding to the standard
                     if(line.startsWith("std Times in queue")){
                         addedLines.add(line+","+stdDeviationLong(Statistics.timeInQueue));
@@ -263,6 +294,9 @@ public class MyMiddleware implements Runnable{
                     else if(line.startsWith("std Number of misses get")){
                         addedLines.add(line+","+stdDeviation(Statistics.nrMissesGets));
                     }
+                    else if(line.startsWith("std Arrival rate")){
+                        addedLines.add(line+","+stdDeviation(Statistics.arrivalRate));
+                    }
                     //else do nothing
 
                 }
@@ -287,6 +321,7 @@ public class MyMiddleware implements Runnable{
                 out.write("Number of sets ," + average(Statistics.nrSets) + "\n");
                 out.write("Number of mgets ," + average(Statistics.nrMGets) + "\n");
                 out.write("Number of misses get ," + average(Statistics.nrMissesGets) + "\n");
+                out.write("Arrival rate ," + average(Statistics.arrivalRate) + "\n");
 
                 out.write("std Times in queue ," + stdDeviationLong(Statistics.timeInQueue) + "\n");
                 out.write("std Parsing times ," + stdDeviationLong(Statistics.parsingTime) + "\n");
@@ -301,10 +336,16 @@ public class MyMiddleware implements Runnable{
                 out.write("std Number of sets ," + stdDeviation(Statistics.nrSets) + "\n");
                 out.write("std Number of mgets ," + stdDeviation(Statistics.nrMGets) + "\n");
                 out.write("std Number of misses get ," + stdDeviation(Statistics.nrMissesGets) + "\n");
+                out.write("std Arrival rate ," + stdDeviation(Statistics.arrivalRate) + "\n");
+
+                out.write("\n");
+                for (int i=0;i<Params.nrThreads;i++){
+                    out.write("Thread "+i+" ," + averageLong(Statistics.serviceTimesPerThread[i]) + "\n");
+                    out.write("Thread std "+i+" ," + stdDeviationLong(Statistics.serviceTimesPerThread[i]) + "\n");
+                }
 
                 out.write("\n\n");
 
-                System.out.println(printList(Statistics.nrMissesGets));
             }
 
         }

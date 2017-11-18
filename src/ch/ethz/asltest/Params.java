@@ -11,6 +11,7 @@ public class Params {
     public static boolean shardedRead;
     public static boolean middlewareOn = true;
     public static final int keepAliveTime = 10000;
+    public static int nrThreads;
     public static  List<String> mcAdresses ;
     public static int nrServers = 0;
 

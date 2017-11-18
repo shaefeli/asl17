@@ -7,6 +7,20 @@ import java.util.*;
  */
 public class StatisticsAggregator extends TimerTask {
     public void run() {
+        long[] serviceTimeInThread= new long[Params.nrThreads];
+        int[] serviceTimeInThreadCount= new int[Params.nrThreads];
+        System.arraycopy(RequestHandler.perThreadServiceTimes,0,serviceTimeInThread,0,Params.nrThreads);
+        System.arraycopy(RequestHandler.perThreadServiceTimesCount,0,serviceTimeInThreadCount,0,Params.nrThreads);
+        RequestHandler.perThreadServiceTimes= new long[Params.nrThreads];
+        RequestHandler.perThreadServiceTimesCount= new int[Params.nrThreads];
+
+        Long[] averagesServiceTime = new Long[Params.nrThreads];
+        for (int i=0;i<Params.nrThreads;i++){
+            averagesServiceTime[i] = computeAverage(serviceTimeInThread[i],serviceTimeInThreadCount[i]);
+        }
+        int nrArrivals = MyMiddleware.nrArrivals.getAndSet(0);
+        int arrivalRate = nrArrivals/Statistics.timeWindowStat;
+
         long timeInQueue = RequestHandler.timeInQueue.getAndSet(0);
         int timeInQueueCount = RequestHandler.timeInQueueCount.getAndSet(0);
 
@@ -36,6 +50,7 @@ public class StatisticsAggregator extends TimerTask {
         long mgetMemTimes = RequestHandler.timeInMGetMem.getAndSet(0);
         int mgetMemTimesCount = RequestHandler.timeInMGetMemCount.getAndSet(0);
 
+        Statistics.arrivalRate.add(arrivalRate);
         Statistics.nrMGets.add(nrMGets);
         Statistics.nrGets.add(nrGets);
         Statistics.nrSets.add(nrSets);
@@ -49,6 +64,11 @@ public class StatisticsAggregator extends TimerTask {
         Statistics.setTime.add(computeAverage(setTimes,setTimesCount));
         Statistics.mgetTime.add(computeAverage(mgetTimes,mgetTimesCount));
         Statistics.mgetMemTime.add(computeAverage(mgetMemTimes,mgetMemTimesCount));
+
+        for (int i=0;i<Params.nrThreads;i++){
+            Statistics.serviceTimesPerThread[i].add(averagesServiceTime[i]);
+        }
+
     }
     private long computeAverage(long a, int count){
         if(count == 0){

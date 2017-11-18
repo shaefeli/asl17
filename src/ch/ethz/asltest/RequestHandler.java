@@ -19,6 +19,8 @@ import java.util.concurrent.atomic.AtomicLong;
 //One request handler object represents one worker thread
 public class RequestHandler implements Runnable{
     //variables for statistics
+    public static long[] perThreadServiceTimes = new long[Params.nrThreads];
+    public static int[] perThreadServiceTimesCount = new int[Params.nrThreads];
     public static AtomicInteger timeInQueueCount = new AtomicInteger(0);
     public static AtomicLong timeInQueue = new AtomicLong(0);
 
@@ -152,6 +154,8 @@ public class RequestHandler implements Runnable{
             long endServiceTime = System.nanoTime()-request.startServiceTime;
             serviceTime.getAndAdd(endServiceTime);
             serviceTimeCount.getAndIncrement();
+            perThreadServiceTimes[(int)Thread.currentThread().getId()%Params.nrThreads] += endServiceTime;
+            perThreadServiceTimesCount[(int)Thread.currentThread().getId()%Params.nrThreads] += 1;
         }
 
         else if(request.requestType == RequestType.GET){
@@ -160,6 +164,8 @@ public class RequestHandler implements Runnable{
             long endServiceTime = System.nanoTime()-request.startServiceTime;
             serviceTime.getAndAdd(endServiceTime);
             serviceTimeCount.getAndIncrement();
+            perThreadServiceTimes[(int)Thread.currentThread().getId()%Params.nrThreads] += endServiceTime;
+            perThreadServiceTimesCount[(int)Thread.currentThread().getId()%Params.nrThreads] += 1;
         }
         else if (request.requestType == RequestType.INIT){
             getSockets();   //This is done so that the ThreadLocal gets initialized;
@@ -171,6 +177,8 @@ public class RequestHandler implements Runnable{
             long endServiceTime = System.nanoTime()-request.startServiceTime;
             serviceTime.getAndAdd(endServiceTime);
             serviceTimeCount.getAndIncrement();
+            perThreadServiceTimes[(int)Thread.currentThread().getId()%Params.nrThreads] += endServiceTime;
+            perThreadServiceTimesCount[(int)Thread.currentThread().getId()%Params.nrThreads] += 1;
         }
 
         //Unknown request
