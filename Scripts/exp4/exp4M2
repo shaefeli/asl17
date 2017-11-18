@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+testTime=$1
+runTime=$((testTime+6))
+perMWTime=$((runTime+1))
+
+threads=(8 16 32 64)
+shardedRead=("true")
+#Note: all the rep=1 correspond to ratio 1:0 of clien, rep=0 correspond to ratio 0:1 of client
+ratios=(1 1 1 1 1 1 0 0 0 0 0 0)
+currRatio=1
+lastThread=8
+lastRepetition=1
+repetitions=(1 2 3)
+for rep in "${repetitions[@]}"
+do
+	for t in "${threads[@]}"
+	do	
+		for r in "${ratios[@]}"
+		do
+			if [ ! $currRatio -eq $r ];then
+				mv statistics.txt stats/mw02_thread${lastThread}_ratio${currRatio}_rep${lastRepetition}.txt
+				currRatio=$r
+				lastThread=$t
+				lastRepetition=$rep
+			fi
+			timeout $runTime java -jar asl-fall17-project.jar -l 127.0.0.1 -p 6800 -t 8 -s true -m 127.0.0.1:3000 &
+			sleep $perMWTime 
+		done
+	
+	done
+done
+mv statistics.txt stats/mw02_thread64_ratio0_rep3.txt
+
+
+
+
