@@ -171,10 +171,10 @@ public class MyMiddleware implements Runnable{
 
         for (int i=0;i<Params.nrThreads;i++){
             Statistics.serviceTimesPerThread[i].removeIf(p -> p == 0);
-            //Statistics.serviceTimesPerThread[i]=remove(Statistics.serviceTimesPerThread[i]);
+            Statistics.serviceTimesPerThread[i]=remove(Statistics.serviceTimesPerThread[i]);
         }
 
-        /*Statistics.timeInQueue = remove(Statistics.timeInQueue);
+        Statistics.timeInQueue = remove(Statistics.timeInQueue);
         Statistics.parsingTime = remove(Statistics.parsingTime);
         Statistics.serviceTime = remove(Statistics.serviceTime);
         Statistics.throughput = remove(Statistics.throughput);
@@ -187,7 +187,7 @@ public class MyMiddleware implements Runnable{
         Statistics.nrSets = remove(Statistics.nrSets);
         Statistics.nrMGets = remove(Statistics.nrMGets);
         Statistics.nrMissesGets = remove(Statistics.nrMissesGets);
-        Statistics.arrivalRate = remove(Statistics.arrivalRate);*/
+        Statistics.arrivalRate = remove(Statistics.arrivalRate);
 
         BufferedWriter out = null;
         try

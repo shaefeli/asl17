@@ -2,11 +2,11 @@
 
 testTime=$1
 clients=(1 2 4 8 16 32)
-threads=(1)
-MWThread=(8 16 32 64)
+threads=(2)
+MWThread=(32 64)
 #first write only then read only
 ratios=("1:0" "0:1")
-repetitions=(1 2 3)
+repetitions=(1 2)
 for r in "${repetitions[@]}"
 do
 	for mwt in "${MWThread[@]}"
@@ -18,7 +18,6 @@ do
 				for s in "${clients[@]}"
 				do
 					./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=${s} --threads=${t} --port=6800 --protocol=memcache_text --test-time=$testTime --server=52.166.108.214 --hide-histogram --ratio=${ra} >>statFiles/client01inst1_ratio${ra}_MWT${mwt}_rep${r}.txt &
-					./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=${s} --threads=${t} --port=6801 --protocol=memcache_text --test-time=$testTime --server=52.166.108.112 --hide-histogram --ratio=${ra} >>statFiles/client01inst2_ratio${ra}_MWT${mwt}_rep${r}.txt &
 					sleep $((testTime+8)) 
 				done
 			done

@@ -3,10 +3,10 @@
 testTime=$1
 clients=(1 2 4 8 16 32)
 threads=(1)
-MWThread=(8 16 32 64)
+MWThread=(32 64)
 #first write only then read only
 ratios=("1:0" "0:1")
-repetitions=(1 2 3)
+repetitions=(1 2)
 for r in "${repetitions[@]}"
 do
 	for mwt in "${MWThread[@]}"

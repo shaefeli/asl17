@@ -4,14 +4,14 @@ testTime=$1
 runTime=$((testTime+6))
 perMWTime=$((runTime+2))
 
-threads=(8 16 32 64)
+threads=(32 64)
 shardedRead=("true")
 #Note: all the rep=1 correspond to ratio 1:0 of clien, rep=0 correspond to ratio 0:1 of client
 ratios=(1 1 1 1 1 1 0 0 0 0 0 0)
 currRatio=1
 lastThread=8
 lastRepetition=1
-repetitions=(1 2 3)
+repetitions=(1 2)
 for rep in "${repetitions[@]}"
 do
 	for t in "${threads[@]}"
