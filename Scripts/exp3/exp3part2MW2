@@ -19,18 +19,18 @@ do
 		for r in "${ratios[@]}"
 		do
 			if [ ! $currRatio -eq $r ];then
-				mv statistics.txt stats/mw01_thread${lastThread}_ratio${currRatio}_rep${lastRepetition}.txt
+				mv statistics.txt stats/mw02_thread${lastThread}_ratio${currRatio}_rep${lastRepetition}.txt
 				currRatio=$r
 				lastThread=$t
 				lastRepetition=$rep
 			fi
-			timeout $runTime java -jar asl-fall17-project.jar -l 127.0.0.1 -p 6800 -t ${t} -s true -m 127.0.0.1:3000 &
+			timeout $runTime java -jar asl-fall17-project.jar -l 127.0.0.1 -p 6801 -t ${t} -s true -m 127.0.0.1:3000 &
 			sleep $perMWTime 
 		done
 	
 	done
 done
-mv statistics.txt stats/mw01_thread64_ratio0_rep3.txt
+mv statistics.txt stats/mw02_thread64_ratio0_rep3.txt
 
 
 

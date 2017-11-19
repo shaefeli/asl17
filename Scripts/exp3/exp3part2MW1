@@ -2,7 +2,7 @@
 
 testTime=$1
 runTime=$((testTime+6))
-perMWTime=$((runTime+1))
+perMWTime=$((runTime+2))
 
 threads=(8 16 32 64)
 shardedRead=("true")
@@ -24,7 +24,7 @@ do
 				lastThread=$t
 				lastRepetition=$rep
 			fi
-			timeout $runTime java -jar asl-fall17-project.jar -l 127.0.0.1 -p 6800 -t 8 -s true -m 127.0.0.1:3000 &
+			timeout $runTime java -jar asl-fall17-project.jar -l 127.0.0.1 -p 6800 -t ${t} -s true -m 127.0.0.1:3000 &
 			sleep $perMWTime 
 		done
 	

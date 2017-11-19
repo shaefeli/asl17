@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms1.westeurope.cloudapp.azure.com:~/memtier_benchmark-master/statFiles /home/simon/Documents/ETH/asl/collectedStatFiles/Exp3/part2 
+
+mv /home/simon/Documents/ETH/asl/collectedStatFiles/Exp3/part2/statFiles /home/simon/Documents/ETH/asl/collectedStatFiles/Exp3/part2/statsClient
+
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms4.westeurope.cloudapp.azure.com:~/code/stats /home/simon/Documents/ETH/asl/collectedStatFiles/Exp3/part2 
+
+mv /home/simon/Documents/ETH/asl/collectedStatFiles/Exp3/part2/stats /home/simon/Documents/ETH/asl/collectedStatFiles/Exp3/part2/statsMW01
+
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms5.westeurope.cloudapp.azure.com:~/code/stats /home/simon/Documents/ETH/asl/collectedStatFiles/Exp3/part2 
+
+mv /home/simon/Documents/ETH/asl/collectedStatFiles/Exp3/part2/stats /home/simon/Documents/ETH/asl/collectedStatFiles/Exp3/part2/statsMW02
