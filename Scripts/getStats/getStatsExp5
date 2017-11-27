@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms1.westeurope.cloudapp.azure.com:~/memtier_benchmark-master/statFiles /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5
+
+mv /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statFiles /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsClient1
+
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms2.westeurope.cloudapp.azure.com:~/memtier_benchmark-master/statFiles /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5
+
+mv /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statFiles /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsClient2
+
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms3.westeurope.cloudapp.azure.com:~/memtier_benchmark-master/statFiles /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5
+
+mv /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statFiles /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsClient3
+
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms4.westeurope.cloudapp.azure.com:~/code/stats /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5
+
+mv /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/stats /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW1
+
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms5.westeurope.cloudapp.azure.com:~/code/stats /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5
+
+mv /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/stats /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW2

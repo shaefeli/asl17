@@ -41,6 +41,7 @@ public class MyMiddleware implements Runnable{
                     welcomeSocket.close();
                     //Here we print all statistics
                     printAllStatistics();
+                    //printAllStatisticsExp5();
                 } catch(Exception e){
                     e.printStackTrace();
                     System.err.println("Error while shutting down");
@@ -152,6 +153,158 @@ public class MyMiddleware implements Runnable{
 
 
 
+    private void printAllStatisticsExp5(){
+        Statistics.timeInQueue.removeIf(p -> p == 0);
+        Statistics.parsingTime.removeIf(p -> p == 0);
+        Statistics.serviceTime.removeIf(p -> p == 0);
+        Statistics.throughput.removeIf(p -> p == 0);
+        Statistics.getTime.removeIf(p -> p == 0);
+        Statistics.setTime.removeIf(p -> p == 0);
+        Statistics.mgetTime.removeIf(p -> p == 0);
+        Statistics.mgetMemTime.removeIf(p -> p == 0);
+        Statistics.queueLength.removeIf(p -> p == 0);
+        Statistics.nrGets.removeIf(p -> p == 0);
+        Statistics.nrSets.removeIf(p -> p == 0);
+        Statistics.nrMGets.removeIf(p -> p == 0);
+        Statistics.nrMGets.removeIf(p -> p == 0);
+        Statistics.nrMissesGets.removeIf(p -> p == 0);
+        Statistics.arrivalRate.removeIf(p -> p== 0);
+
+        for (int i=0;i<Params.nrThreads;i++){
+            Statistics.serviceTimesPerThread[i].removeIf(p -> p == 0);
+            Statistics.serviceTimesPerThread[i]=remove(Statistics.serviceTimesPerThread[i]);
+        }
+
+        Statistics.timeInQueue = remove(Statistics.timeInQueue);
+        Statistics.parsingTime = remove(Statistics.parsingTime);
+        Statistics.serviceTime = remove(Statistics.serviceTime);
+        Statistics.throughput = remove(Statistics.throughput);
+        Statistics.getTime = remove(Statistics.getTime);
+        Statistics.setTime = remove(Statistics.setTime);
+        Statistics.mgetTime = remove(Statistics.mgetTime);
+        Statistics.mgetMemTime = remove(Statistics.mgetMemTime);
+        Statistics.queueLength = remove(Statistics.queueLength);
+        Statistics.nrGets = remove(Statistics.nrGets);
+        Statistics.nrSets = remove(Statistics.nrSets);
+        Statistics.nrMGets = remove(Statistics.nrMGets);
+        Statistics.nrMissesGets = remove(Statistics.nrMissesGets);
+        Statistics.arrivalRate = remove(Statistics.arrivalRate);
+
+        BufferedWriter out = null;
+        try
+        {
+            File statF = new File(Statistics.fileName);
+            //append
+            if(statF.exists() && !statF.isDirectory()){
+                List<String> lines = Files.lines(Paths.get(Statistics.fileName)).collect(Collectors.toList());
+                List<String> addedLines = new ArrayList<>();
+                for(String line : lines){
+                    if(line.startsWith("Configuration")){
+                        addedLines.add(line);
+                    }
+                    else if(line.startsWith("Thread")){
+                        for (int i=0;i<Params.nrThreads;i++){
+                            if(line.startsWith("Thread "+i+" ")){
+                                addedLines.add(line+","+Statistics.serviceTimesPerThread[i]);
+                            }
+                        }
+                    }
+                    //Adding to the averages
+                    else if(line.startsWith("Times in queue")){
+                        addedLines.add(line+","+Statistics.timeInQueue);
+                    }
+                    else if(line.startsWith("Parsing times")){
+                        addedLines.add(line+","+Statistics.parsingTime);
+                    }
+                    else if(line.startsWith("Service times")){
+                        addedLines.add(line+","+Statistics.serviceTime);
+                    }
+                    else if(line.startsWith("Throughput")){
+                        addedLines.add(line+","+Statistics.throughput);
+                    }
+                    else if(line.startsWith("Times in get")){
+                        addedLines.add(line+","+Statistics.getTime);
+                    }
+                    else if(line.startsWith("Times in set")){
+                        addedLines.add(line+","+Statistics.setTime);
+                    }
+                    else if(line.startsWith("Times in mget")){
+                        addedLines.add(line+","+Statistics.mgetTime);
+                    }
+                    else if(line.startsWith("Times in mget only")){
+                        addedLines.add(line+","+Statistics.mgetMemTime);
+                    }
+                    else if(line.startsWith("Queue lengths")){
+                        addedLines.add(line+","+Statistics.queueLength);
+                    }
+                    else if(line.startsWith("Number of gets")){
+                        addedLines.add(line+","+Statistics.nrGets);
+                    }
+                    else if(line.startsWith("Number of sets")){
+                        addedLines.add(line+","+Statistics.nrSets);
+                    }
+                    else if(line.startsWith("Number of mgets")){
+                        addedLines.add(line+","+Statistics.nrMGets);
+                    }
+                    else if(line.startsWith("Number of misses get")){
+                        addedLines.add(line+","+Statistics.nrMissesGets);
+                    }
+                    else if(line.startsWith("Arrival rate")){
+                        addedLines.add(line+","+Statistics.arrivalRate);
+                    }
+
+                    //else do nothing
+
+                }
+                Files.write(Paths.get(Statistics.fileName), addedLines);
+            }
+            //Create new
+            else {
+                FileWriter fstream = new FileWriter(Statistics.fileName, true);
+                out = new BufferedWriter(fstream);
+                out.write("Configuration : nrThreads: " + numThreads + " ,nrServers: " + Params.nrServers + " ,read sharded: " + this.readSharded + "\n");
+
+                out.write("Times in queue ," + Statistics.timeInQueue + "\n");
+                out.write("Parsing times ," + Statistics.parsingTime + "\n");
+                out.write("Service times ," + Statistics.serviceTime + "\n");
+                out.write("Throughput ," + Statistics.throughput + "\n");
+                out.write("Times in get ," + Statistics.getTime + "\n");
+                out.write("Times in set ," + Statistics.setTime + "\n");
+                out.write("Times in mget ," + Statistics.mgetTime + "\n");
+                out.write("Times in mget only memcached part ," + Statistics.mgetMemTime + "\n");
+                out.write("Queue lengths ," + Statistics.queueLength + "\n");
+                out.write("Number of gets ," + Statistics.nrGets + "\n");
+                out.write("Number of sets ," + Statistics.nrSets + "\n");
+                out.write("Number of mgets ," + Statistics.nrMGets + "\n");
+                out.write("Number of misses get ," + Statistics.nrMissesGets + "\n");
+                out.write("Arrival rate ," + Statistics.arrivalRate + "\n");
+
+                out.write("\n");
+                for (int i=0;i<Params.nrThreads;i++){
+                    out.write("Thread "+i+" ," + Statistics.serviceTimesPerThread[i] + "\n");
+                }
+
+                out.write("\n\n");
+
+            }
+
+        }
+        catch (IOException e)
+        {
+            System.err.println("Error: " + e.getMessage());
+        }
+        finally
+        {
+            if(out != null) {
+                try{
+                    out.close();
+                }catch(Exception e){
+                    System.err.println("Impossible to write to file");
+                }
+
+            }
+        }
+    }
     private void printAllStatistics(){
         Statistics.timeInQueue.removeIf(p -> p == 0);
         Statistics.parsingTime.removeIf(p -> p == 0);
@@ -316,7 +469,7 @@ public class MyMiddleware implements Runnable{
                 out.write("Times in set ," + averageLong(Statistics.setTime) + "\n");
                 out.write("Times in mget ," + averageLong(Statistics.mgetTime) + "\n");
                 out.write("Times in mget only memcached part ," + averageLong(Statistics.mgetMemTime) + "\n");
-                out.write("Queue lenghts ," + average(Statistics.queueLength) + "\n");
+                out.write("Queue lengths ," + average(Statistics.queueLength) + "\n");
                 out.write("Number of gets ," + average(Statistics.nrGets) + "\n");
                 out.write("Number of sets ," + average(Statistics.nrSets) + "\n");
                 out.write("Number of mgets ," + average(Statistics.nrMGets) + "\n");
@@ -331,7 +484,7 @@ public class MyMiddleware implements Runnable{
                 out.write("std Times in set ," + stdDeviationLong(Statistics.setTime) + "\n");
                 out.write("std Times in mget ," + stdDeviationLong(Statistics.mgetTime) + "\n");
                 out.write("std Times in mget only memcached part ," + stdDeviationLong(Statistics.mgetMemTime) + "\n");
-                out.write("std Queue lenghts ," + stdDeviation(Statistics.queueLength) + "\n");
+                out.write("std Queue lengths ," + stdDeviation(Statistics.queueLength) + "\n");
                 out.write("std Number of gets ," + stdDeviation(Statistics.nrGets) + "\n");
                 out.write("std Number of sets ," + stdDeviation(Statistics.nrSets) + "\n");
                 out.write("std Number of mgets ," + stdDeviation(Statistics.nrMGets) + "\n");

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=20 --threads=2 --port=3000 --server=52.178.72.89 --protocol=memcache_text --test-time=10 ratio=0:1 
+./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=20 --threads=2 --port=3001 --server=52.178.76.230 --protocol=memcache_text --test-time=60 ratio=1:0 &
+./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=20 --threads=2 --port=3002 --server=52.178.72.152 --protocol=memcache_text --test-time=60 ratio=1:0 &
+sleep 65 
+

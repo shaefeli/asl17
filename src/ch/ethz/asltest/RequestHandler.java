@@ -149,8 +149,8 @@ public class RequestHandler implements Runnable{
            System.out.println("Thread number "+Thread.currentThread().getId()+ " handles request :"+request.toString());
        }
         if(request.requestType == RequestType.SET){
+           handleSet(request);
             nrSets.getAndIncrement();
-            handleSet(request);
             long endServiceTime = System.nanoTime()-request.startServiceTime;
             serviceTime.getAndAdd(endServiceTime);
             serviceTimeCount.getAndIncrement();
@@ -159,8 +159,8 @@ public class RequestHandler implements Runnable{
         }
 
         else if(request.requestType == RequestType.GET){
-            nrGets.getAndIncrement();
             handleGet(request);
+            nrGets.getAndIncrement();
             long endServiceTime = System.nanoTime()-request.startServiceTime;
             serviceTime.getAndAdd(endServiceTime);
             serviceTimeCount.getAndIncrement();
@@ -172,8 +172,8 @@ public class RequestHandler implements Runnable{
             //Do nothing, it was only to initialize the threads
         }
         else if(request.requestType == RequestType.MGET){
-            nrMGets.getAndIncrement();
             handleMultiGet(request);
+            nrMGets.getAndIncrement();
             long endServiceTime = System.nanoTime()-request.startServiceTime;
             serviceTime.getAndAdd(endServiceTime);
             serviceTimeCount.getAndIncrement();
@@ -308,7 +308,6 @@ public class RequestHandler implements Runnable{
             timeInMGetMemCount.getAndIncrement();
         }
         else {
-
             //Share the requests
             int nrKeysPerServer = request.keys.size()/ Params.nrServers;
             int leftKeysToShare = request.keys.size()-nrKeysPerServer* Params.nrServers;

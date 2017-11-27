@@ -9,7 +9,7 @@ shardedRead=("true")
 #Note: all the rep=1 correspond to ratio 1:0 of clien, rep=0 correspond to ratio 0:1 of client
 ratios=(1 1 1 1 1 1 0 0 0 0 0 0)
 currRatio=1
-lastThread=8
+lastThread=32
 lastRepetition=1
 repetitions=(1 2)
 for rep in "${repetitions[@]}"
@@ -24,13 +24,13 @@ do
 				lastThread=$t
 				lastRepetition=$rep
 			fi
-			timeout $runTime java -jar asl-fall17-project.jar -l 10.0.0.7 -p 6800 -t ${t} -s true -m 52.166.108.213:3000 &
+			timeout $runTime java -jar asl-fall17-project.jar -l 10.0.0.7 -p 6800 -t ${t} -s true -m 52.232.23.6:3000 &
 			sleep $perMWTime 
 		done
 	
 	done
 done
-mv statistics.txt stats/mw01_thread64_ratio0_rep3.txt
+mv statistics.txt stats/mw01_thread64_ratio0_rep2.txt
 
 
 

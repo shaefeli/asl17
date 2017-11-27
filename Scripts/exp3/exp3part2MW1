@@ -24,7 +24,7 @@ do
 				lastThread=$t
 				lastRepetition=$rep
 			fi
-			timeout $runTime java -jar asl-fall17-project.jar -l 10.0.0.7 -p 6800 -t ${t} -s true -m 52.166.108.213:3000 &
+			timeout $runTime java -jar asl-fall17-project.jar -l 10.0.0.7 -p 6800 -t ${t} -s true -m 52.232.23.6:3000 &
 			sleep $perMWTime 
 		done
 	

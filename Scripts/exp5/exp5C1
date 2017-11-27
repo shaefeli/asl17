@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+testTime=$1
+#first write only then read only
+mgetSize=(1 3 6 9)
+shardedRead=(1 0)
+repetitions=(1 2 3)
+for r in "${repetitions[@]}"
+do
+	for s in "${shardedRead[@]}"
+	do
+		for mg in "${mgetSize[@]}"
+		do	
+			./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=1 --threads=1 --port=6800 --server=52.178.78.94 --protocol=memcache_text --test-time=$testTime --multi-key-get=${mg} >>statFiles/client01inst1_sharded${s}_rep${r}.txt &
+			./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=1 --threads=1 --port=6801 --server=52.178.75.198 --protocol=memcache_text --test-time=$testTime --multi-key-get=${mg} >>statFiles/client01inst2_sharded${s}_rep${r}.txt &
+			sleep $((testTime+8)) 
+		done
+	done
+done

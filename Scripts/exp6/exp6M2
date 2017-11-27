@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+testTime=$1
+runTime=$((testTime+6))
+perMWTime=$((runTime+2))
+
+threads=(8 32)
+#We test for 4 different nr of keys
+ratios=("1:0" "0:1" "1:1")
+repetitions=(1 2 3)
+for rep in "${repetitions[@]}"
+do
+	for r in "${ratios[@]}"
+	do
+		for t in "${threads[@]}"
+		do	
+		
+			timeout $runTime java -jar asl-fall17-project.jar -l 10.0.0.6 -p 6801 -t ${t} -s ${s} -m 52.174.139.153:3000 52.232.71.58:3001 52.232.69.33:3002 &
+			sleep $perMWTime 
+		done
+		mv statistics.txt stats/mw02_ratio${r}_rep${rep}.txt
+	done
+done
+
+
+
+
+
+

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+scp -i ~/.ssh/azure -o StrictHostKeyChecking=no /home/simon/Documents/ETH/asl/asl-fall17-project/out/artifacts/asl_fall17_project_jar/asl-fall17-project.jar shaefeli@shaefeliforaslvms5.westeurope.cloudapp.azure.com:~/code
+
+scp -i ~/.ssh/azure -o StrictHostKeyChecking=no /home/simon/Documents/ETH/asl/asl-fall17-project/out/artifacts/asl_fall17_project_jar/asl-fall17-project.jar shaefeli@shaefeliforaslvms4.westeurope.cloudapp.azure.com:~/code

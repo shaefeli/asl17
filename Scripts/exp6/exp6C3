@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+testTime=$1
+#first write only then read only
+ratios=("1:0" "0:1" "1:1")
+MWThreads=(8 32)
+repetitions=(1 2 3)
+for r in "${repetitions[@]}"
+do
+	for ra in "${ratios[@]}"
+	do	
+		for t in "${MWThreads[@]}"
+		do
+			memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=32 --threads=1 --port=6800 --server=52.174.137.34 --hide-histogram --protocol=memcache_text --test-time=$testTime --ratio=${ra} >>statFiles/client03inst1_ratio${ra}_rep${r}.txt &
+			memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=32 --threads=1 --port=6801 --server=52.174.137.35 --hide-histogram --protocol=memcache_text --test-time=$testTime --ratio=${ra} >>statFiles/client03inst2_ratio${ra}_rep${r}.txt &
+			sleep $((testTime+8))
+			done 
+		done
+	done
+done

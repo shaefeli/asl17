@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms1.westeurope.cloudapp.azure.com:~/memtier_benchmark-master/statFiles /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs 
+
+mv /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs/statFiles /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs/statsClient1BottSearch
+
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms1.westeurope.cloudapp.azure.com:~/memtier_benchmark-master/statFiles /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs 
+
+mv /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs/statFiles /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs/statsClient2BottSearch
+
+scp -r -i ~/.ssh/azure -o StrictHostKeyChecking=no shaefeli@shaefeliforaslvms4.westeurope.cloudapp.azure.com:~/code/stats /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs 
+
+mv /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs/stats /home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs/statsMWBottSearch
+
