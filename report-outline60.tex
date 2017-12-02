@@ -3,7 +3,19 @@
 \usepackage{fullpage}
 \usepackage{hyperref}
 \usepackage{graphicx}
-
+\usepackage{enumerate}
+\usepackage{tikz}
+\usepackage[bottom]{footmisc}
+\usetikzlibrary{shapes, arrows, positioning, fit, backgrounds}
+\usepackage{color}
+\definecolor{pblue}{rgb}{0.13,0.13,1}
+\usepackage{listings}
+\lstset{language=Java,
+		keywordstyle=\color{pblue},
+		 breaklines=true,
+		 basicstyle=\small,
+		 tabsize=2
+}
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
@@ -12,7 +24,7 @@
 \renewcommand{\footrulewidth}{0pt}
 
 \fancypagestyle{firstpagefooter} {
-	\lfoot{\tiny{Version: 17.11.2017}}
+	\lfoot{\tiny{Version: 02.12.2017}}
 	\cfoot{}
 	\rfoot{\thepage}
 	
@@ -48,10 +60,103 @@
 \newpage
 
 
-\section{System Overview (75 pts)}
+\section{System Overview}
+\subsection{Abstract}
+This projects consisted of designing, implementing and evaluating the performance of a key-value store network system. We added a so called middleware between the memtier benchmark clients and the memcached servers that was able to forward the requests and answers and do some processing for certain particular requests. In this report, we are first discussing the way the middleware has been implemented, analyze results of different experiments and finally modelling our system. 
+\subsection{General design and implementation particularities}
+Even though the general structure of the middleware was clearly defined, the components of the middlware asked for some important design choices. Here follow a small overview of the different implementation choices. 
 
-Describe the implementation of your system and highlight design decisions relevant for the experiments. Explain how messages are parsed and how statistics are gathered in a multi-threaded setting. Provide figures containing all the threads and queues in your system (including the network and the memcached servers). Include illustrations that show how requests of different types are handled (e.g., components involved in processing the request and method calls). Please include all details necessary to understand artifacts and effects in your experiments that arise from your implementation choices.
+\begin{center}
+\includegraphics[scale=0.7]{baseIm.png}
+\end{center}
+\begin{enumerate}[ {(}1{)} ]
+\item The net thread is the thread that accepts connections from the clients, and reads the incoming requests to put them in the request queue (2). The \textit{Java.nio} (non-blocking IO) package was used to achieve this purpose: A \textit{ServerSocketChannel} was used as a welcome socket to accept connections from the clients by creating for each client a \textit{SocketChannel}, and a \textit{Selector} was used to iterate over the the sockets (the connection sockets and the welcome socket) to find entering requests for the middleware or connection requests. Using the \textit{Java.nio} allows us not only to abstract the handling of a various number of connections, but also iterates over the client connections in an optimal way by using \textit{SelectionKeys}. 
+\item The request queue is a java \textit{LinkedBlockingQueue}, which has the nice properties to be unbounded and beeing FCFS. Requests wait in this queue until a worker thread is free.   
 
+\item The request queue and the worker threads are both managed by the java \textit{ThreadPoolExecutor}. The thread pool executor,which definition is: 
+\begin{lstlisting}
+	ThreadPoolExecutor(int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, LinkedBlockingQueue workQueue)
+\end{lstlisting} 
+has a fixed number of worker threads by setting corePoolSize = maximumPoolSize. Putting a request into the queue or executing it, depending on the availability of the worker threads is beeing done by the same following instruction:
+\begin{lstlisting}
+	myThreadPoolExecutor.execute(Runnable command)
+\end{lstlisting}
+The \textit{ThreadPoolExecutor} will execute the command if a worker thread is available, or put it to the unbounded queue if not, which is exactly the expected behaviour.\footnote{https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ThreadPoolExecutor.html, part on "Queuing"}     
+ 
+\item The connection sockets with the memcached servers are normal Java \textit{Socket}. Each worker thread opens a socket to each memcached server the first time it is beeing run and keeps it open until the middleware is stopped.  
+\end{enumerate}
+
+\subsection{Request handling}
+We now want to look closer at the implementation of the middleware and how the pipeline looks like for a request beeing processed. The following flow chart illustrates this:
+\\
+\\\\
+% Define block styles]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=9em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm,
+    minimum height=2em]   
+\begin{tikzpicture}[node distance = 3cm, auto]
+    % Place nodes
+    \node [block] (RunMW) {\textbf{\underline{RunMW}} \\ \textit{main(): starts the mw}};
+    \node [block, below=0.7cm of RunMW] (MyMiddleware) {\textbf{\underline{MyMiddleware}} \\ \textit{run(): reads the text from the socket and creates a prerequest}};
+    \node [block, left=3cm of MyMiddleware, text width=8em] (Params) {\underline{Params} \\ inputs predefined parameters};
+    \node [block, right=2cm of MyMiddleware] (PreRequest) {\textbf{\underline{PreRequest}} \\ \textit{PreRequest(): creates an object with the text and a starting time}};
+    \node [block, below of=MyMiddleware] (QueueHandler) {\textbf{\underline{QueueHandler}} \\ \textit{putToQueue(): calls the threadPoolExecutor execute function on the Prerequest}};
+    \node [block, left=3cm of QueueHandler, text width=11em] (StatisticsAggregator) {\textbf{\underline{StatisticsAggregator}} \\ \textit{run(): Gets statistics from different classes every time window, processes them and stores in the Statistics class}};
+     \node [block, below of=StatisticsAggregator, text width=8em] (Statistics) {\underline{Statistics} \\ Contains the aggregated statistics};
+      \node [block, below=1cm of QueueHandler] (RequestHandler) {\textbf{\underline{RequestHandler}} \\ \textit{run(): creates a Request to parse the PreRequest and calls the appropriate handling function}};
+      \node [block, right=2cm of RequestHandler, text width=8em] (Request) {\textbf{\underline{Request}} \\ \textit{Request(): parses the text received from the client with the correct RequestType}};
+      \node [block, above of=Request] (RequestType) {\underline{RequestType} \\ Contains the different request types};
+      \node [cloud, below=0.8cm of RequestHandler] (HandleGet) {HandleGet()};
+      \node [cloud, right=0.5cm of HandleGet] (HandleSet) {HandleSet()};
+      \node [cloud, left=0.5cm of HandleGet] (HandleMGet) {HandleMGet()};
+      
+    % Draw edges
+    \path [line] (RunMW) -- (MyMiddleware);
+    \draw[>=latex,->] ([yshift= -5pt] PreRequest.west) -- ([yshift= -5pt] MyMiddleware.east);
+    \draw[>=latex,<-] ([yshift= 5pt] PreRequest.west) -- ([yshift= 5pt] MyMiddleware.east);
+  
+    \path [line] (Params) -- (MyMiddleware);
+    \path [line, dashed] (MyMiddleware) -- (StatisticsAggregator);
+    \path [line, dashed] (QueueHandler) -- (StatisticsAggregator);
+    \path [line, dashed] (RequestHandler) -- (StatisticsAggregator);
+    \path [line] (StatisticsAggregator) -- (Statistics);
+    \path [line] (MyMiddleware) -- (QueueHandler);
+    \path [line] (QueueHandler) -- (RequestHandler);
+    \draw[>=latex,->] ([yshift= 5pt] RequestHandler.east) -- ([yshift= 5pt] Request.west);
+    \draw[>=latex,<-] ([yshift= -5pt] RequestHandler.east) -- ([yshift= -5pt] Request.west);
+    \draw[>=latex,<-] ([xshift= 5pt] Request.north) -- ([xshift= 5pt] RequestType.south);
+    \draw[>=latex,->] ([xshift= -5pt] Request.north) -- ([xshift= -5pt] RequestType.south);
+    \path [line] (RequestHandler) -- (HandleMGet);
+    \path [line] (RequestHandler) -- (HandleGet);
+    \path [line] (RequestHandler) -- (HandleSet);
+\end{tikzpicture}
+
+\newpage
+
+To make some correpondencies with the general structure of the middleware presented in section 1.2, we see that the \textit{MyMiddleware run()} function represents the net thread, the \textit{QueueHandler} class has a \textit{ThreadPoolExecutor} field that manages the request queue and the call of the worker thread, and that the \textit{RequestHandler run()} function represents one worker thread. We may also note that a PreRequest class is beeing created before putting the received message into the queue. This is to bind the message with a time, to be able to track the time a message spends in the queue. 
+\\\\
+At the end of the pipeline, the different requests are treated according to their type (get, set, or multi-get). In case of a set, the request is sent to all memcached servers sequentially, after what the worker thread waits for all the answers, also sequentially, as showed in the next line in the case of 3 memcached servers. 
+\begin{lstlisting}
+	1				send to server 1
+	2				send to server 2
+	3				send to server 3
+	4				wait for answer 1 until received
+	5				wait for answer 2 until received
+	6				wait for answer 3 until received
+	7				merge the answers and send back to client
+\end{lstlisting}
+The main drawback of this design is that if one of the server has a higher latency than the other ones, the worker thread might be waiting idle instead of starting to read the answers from the other servers. 
+\\
+In case of a get request, we simply forward the request to a given server. To decide which memcached server we send the request, we simply keep a static field in the \textit{RequestHandler} class which is shared accross the worker threads that keeps track of the last server to which we sent a get request. This variable is then beeing updated in a round-robin way. 
+\\
+In case of a multi-get, two cases are possible: In the non-sharded case, the request is simply beeing executed as a normal get. In the sharded case, the multi get is beeing splitted equally accross the different available memcached servers.   
+\\\\
+Finally, since we want the connections between the middleware and the servers to be open before running the experiments, we need to initialize these once for every worker thread. By defining the sockets in a \textit{ThreadLocal} in the \textit{RequestHandler} class, the initialization of the sockets will happen only the first time a worker thread is beeing called. That's why every thread is called once during the initialization phase of the middleware, by executing number of worker threads "init" requests, which are fake requests that don't need any special handling.\footnote{According to the javadoc of the ThreadPoolExecutor class, "When a new task is submitted in method execute(java.lang.Runnable), and fewer than corePoolSize threads are running, a new thread is created to handle the request, even if other worker threads are idle". And that's why it is enough to run corePoolSize number of requests to have them run all once and thus initialized their sockets.} 
+
+\subsection{Statistics gathering}
+djfkldsajflkdsaj
 \section{Baseline without Middleware (75 pts)}
 
 In this experiments you study the performance characteristics of the memtier clients and memcached servers.
@@ -397,4 +502,5 @@ Build an M/M/m model based on Section 4, where each middleware worker thread is 
 Based on Section 3, build a network of queues which simulates your system. Motivate the design of your network of queues and relate it wherever possible to a component of your system. Motivate your choice of input parameters for the different queues inside the network. Perform a detailed analysis of the utilization of each component and clearly state what the bottleneck of your system is. Explain for which experiments the predictions of the model match and for which they do not.
 
 \end{document}
+\grid
 \grid
