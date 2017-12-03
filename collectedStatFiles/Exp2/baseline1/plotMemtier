@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+import numpy as np
+import matplotlib.pyplot as plt
+
+#used for plots:
+#client02inst1_ratio0:1_rep3.txt
+#client02inst1_ratio1:0_rep3.txt
+
+statFile = open('client02inst1_ratio1:0_rep3.txt','r');
+setThroughput = []
+setLatency = []
+setThroughputB = []
+getThroughput = []
+getLatency = []
+getThroughputB = []
+getHits=[]
+getMisses=[]
+totalThroughput = []
+totalLatency = []
+totalThroughputB = []
+totalHits=[]
+totalMisses=[]
+for line in statFile:
+	if "Sets" in line:
+		words = line.split(" ")
+		wordsF = [a for a in words if a!='']
+		setThroughput.append(float(wordsF[1]));
+		setLatency.append(float(wordsF[4]));
+		setThroughputB.append(float(wordsF[5]));
+	elif "Gets" in line:
+		words = line.split(" ")
+		wordsF = [a for a in words if a!='']
+		getThroughput.append(float(wordsF[1]));
+		getHits.append(float(wordsF[2]));
+		getMisses.append(float(wordsF[3]));
+		getLatency.append(float(wordsF[4]));
+		getThroughputB.append(float(wordsF[5]));	
+	elif "Totals" in line:
+		words = line.split(" ")
+		wordsF = [a for a in words if a!='']
+		totalThroughput.append(float(wordsF[1]));
+		totalHits.append(float(wordsF[2]));
+		totalMisses.append(float(wordsF[3]));
+		totalLatency.append(float(wordsF[4]));
+		totalThroughputB.append(float(wordsF[5]));		
+	
+
+		
+nrClients=[1,2,4,8,16,20,24,28,32]
+plt.plot(nrClients, totalThroughput)
+plt.title("Typical throughput of one VM")
+plt.xlabel("Number of virtual clients")
+plt.ylabel("Throughput [ops/s]")
+print(getMisses)
+print(getHits)
+plt.show()		
+#plt.savefig("readOneVMThroughput.png")		
+
+
+
+						

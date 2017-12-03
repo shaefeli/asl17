@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+import numpy as np
+import matplotlib.pyplot as plt
+
+#used for plots:
+
+MWNumbers=[8,16,32,64]
+virtualClients=[1,2,4,8,16,32]
+
+setThroughput=np.empty((len(MWNumbers),len(virtualClients)))
+setLatency=np.empty((len(MWNumbers),len(virtualClients)))
+setThroughputB=np.empty((len(MWNumbers),len(virtualClients)))
+
+getThroughput=np.empty((len(MWNumbers),len(virtualClients)))
+getLatency=np.empty((len(MWNumbers),len(virtualClients)))
+getThroughputB=np.empty((len(MWNumbers),len(virtualClients)))
+getHits=np.empty((len(MWNumbers),len(virtualClients)))
+getMisses=np.empty((len(MWNumbers),len(virtualClients)))
+
+totalThroughput=np.empty((len(MWNumbers),len(virtualClients)))
+totalLatency=np.empty((len(MWNumbers),len(virtualClients)))
+totalThroughputB=np.empty((len(MWNumbers),len(virtualClients)))
+totalHits=np.empty((len(MWNumbers),len(virtualClients)))
+totalMisses=np.empty((len(MWNumbers),len(virtualClients)))
+
+for i in range(0,len(MWNumbers)):
+	statFile = open('mwt'+str(MWNumbers[i])+'.txt','r');
+	vc=0;
+	for line in statFile:
+		if "Sets" in line:
+			words = line.split(" ")
+			wordsF = [a for a in words if a!='']
+			setThroughput[i][vc]=float(wordsF[1]);
+			setLatency[i][vc]=float(wordsF[4]);
+			setThroughputB[i][vc]=float(wordsF[5]);
+		elif "Gets" in line:
+			words = line.split(" ")
+			wordsF = [a for a in words if a!='']
+			getThroughput[i][vc]=float(wordsF[1]);
+			getHits[i][vc]=float(wordsF[2]);
+			getMisses[i][vc]=float(wordsF[3]);
+			getLatency[i][vc]=float(wordsF[4]);
+			getThroughputB[i][vc]=float(wordsF[5]);	
+		elif "Totals" in line:
+			words = line.split(" ")
+			wordsF = [a for a in words if a!='']
+			totalThroughput[i][vc]=float(wordsF[1]);
+			totalHits[i][vc]=float(wordsF[2]);
+			totalMisses[i][vc]=float(wordsF[3]);
+			totalLatency[i][vc]=float(wordsF[4]);
+			totalThroughputB[i][vc]=float(wordsF[5]);
+			vc+=1		
+	
+toPlot = totalMisses
+title = "Throughput for one VM"
+xlabel = "number of virtual clients"
+ylabel = "throughput [ops/s]"
+colors=['r','g','b','y']
+fig,ax = plt.subplots()
+for i in range(0,len(MWNumbers)):
+	ax.plot(virtualClients,toPlot[i],color=colors[i], label='MWT'+str(MWNumbers[i]))
+	ax.legend()
+plt.title(title)
+plt.xlabel(xlabel)
+plt.ylabel(ylabel)
+plt.show()	
+
+
+
+						

@@ -62,7 +62,7 @@
 
 \section{System Overview}
 \subsection{Abstract}
-This projects consisted of designing, implementing and evaluating the performance of a key-value store network system. We added a so called middleware between the memtier benchmark clients and the memcached servers that was able to forward the requests and answers and do some processing for certain particular requests. In this report, we are first discussing the way the middleware has been implemented, analyze results of different experiments and finally modelling our system. 
+This project consisted of designing, implementing and evaluating the performance of a key-value store network system. We added a so called middleware between the memtier benchmark clients and the memcached servers that was able to forward the requests and answers and do some processing for certain particular requests. In this report, we are first discussing the way the middleware has been implemented, analyze results of different experiments and finally modelling our system. 
 \subsection{General design and implementation particularities}
 Even though the general structure of the middleware was clearly defined, the components of the middlware asked for some important design choices. Here follow a small overview of the different implementation choices. 
 
@@ -156,17 +156,51 @@ In case of a multi-get, two cases are possible: In the non-sharded case, the req
 Finally, since we want the connections between the middleware and the servers to be open before running the experiments, we need to initialize these once for every worker thread. By defining the sockets in a \textit{ThreadLocal} in the \textit{RequestHandler} class, the initialization of the sockets will happen only the first time a worker thread is beeing called. That's why every thread is called once during the initialization phase of the middleware, by executing number of worker threads "init" requests, which are fake requests that don't need any special handling.\footnote{According to the javadoc of the ThreadPoolExecutor class, "When a new task is submitted in method execute(java.lang.Runnable), and fewer than corePoolSize threads are running, a new thread is created to handle the request, even if other worker threads are idle". And that's why it is enough to run corePoolSize number of requests to have them run all once and thus initialized their sockets.} 
 
 \subsection{Statistics gathering}
-djfkldsajflkdsaj
-\section{Baseline without Middleware (75 pts)}
+Statistics have to be made in different classes accross the middleware, either a count (number of gets, number of sets,...), or an average (queue length, time in queue,...). These statistics are beeing stored in static atomic fields in the respective classes, that can be gotten from the \textit{StatisticsAggregator} class, which is a \textit{Runnable} called every second, the first time at initialization of the middleware. These statistics are then collected every given time window, averaged and stored in the \textit{Statistics} class. This process is beeing illustrated in the next figure:
+\\
+% Define block styles]
+\tikzstyle{block} = [rectangle, draw, fill=green!20, 
+    text width=36em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex'] 
+\begin{tikzpicture}[node distance = 3cm, auto]
+    % Place nodes
+      \node [block, text width=36em] (StatisticsAggregator) {\textbf{\underline{StatisticsAggregator}} \\\begin{lstlisting}
+	public void run(){
+		int timesInQueue = Requesthandler.timesInQueue.getAndSet(0);
+		int timesInQueueCount = Requesthandler.timesInQueueCount.getAndSet(0);
+		Statistics.queueTimes.add(timesInQueue/timesInQueueCount);
+	}
+\end{lstlisting}};
+    \node [block,text width=31em, below=6cm of StatisticsAggregator.west, anchor=west] (RequestHandler) {\textbf{\underline{RequestHandler}} \\\begin{lstlisting}
+	public static AtomicInteger timesInQueue = 0;
+	public static AtomicInteger timesInQueueCount = 0;
+	public void handleRequest(request){
+		ellapsedTime = System.nanoTime()-request.startTime;
+		timesInQueue.getAndAdd(ellapsedTime);
+		timesInQueueCount.getAndIncrement();
+	}
+\end{lstlisting}};
+    \node [block, right=9cm of RequestHandler.north, anchor=north, text width = 10em] (Statistics) {\underline{Statistics} \\\begin{lstlisting}
+	List<Integer> queueTimes;
+\end{lstlisting}};
+      
+    % Draw edges
+    \path [line] (StatisticsAggregator) -| (Statistics);
+    \draw[>=latex,->] ([xshift= -5pt] RequestHandler.north) -- ([xshift= -5pt] StatisticsAggregator.south);
+    \draw[>=latex,<-] ([xshift= 5pt] RequestHandler.north) -- ([xshift= 5pt] StatisticsAggregator.south);
 
-In this experiments you study the performance characteristics of the memtier clients and memcached servers.
+\end{tikzpicture}
+\\\\
+The collected statistics in the \textit{Statistics} class are then beeing filtered, by removing the warm-up time (according to some experiments I made, the middlware needs around 10 seconds to get stable data) and the cool down time (1 second), and removing the zero values that are present before and after the significative values (zeros that occur because of the late start of a memtier client for example or an early stop). 
+\\
+Finally, when the middleware is shut down, the average and standart deviation of every statistic is beeing computed and printed to a file. Depending on the experiment, we sometimes also print all the values to construct histograms.
+\newpage  
+\section{Baseline without Middleware}
+The goal of this experiment is to study how the system would perform without the middleware. This part is important to get a better idea of what the performance limitations of the memcached servers and the memtier benchmark clients are, so we can better judge of the impact of the middleware through the rest of the experiments. 
 
 \subsection{One Server}
 
-Both, for a read-only and write-only workload plot the throughput and the response time as a function of NumClients. All clients are connected to a single memcached instance.
-
-Use 3 load generating VMs, with one memtier (CT=2) each, and vary the number of virtual clients (VC) per memtier thread between 1 and 32. Show how the behavior of the server changes as we add more clients.
-
+First, we want to analyze the performance evolution of the memcached server, and eventually find its upper-bound in terms of performance. To achieve this, we set up one single memcached server beeing queried by a various number of clients, for read-only and write-only workloads. More precisely, we are running experiments in the following configuration:
 \begin{center}
 	\scriptsize{
 		\begin{tabular}{|l|c|}
@@ -176,26 +210,51 @@ Use 3 load generating VMs, with one memtier (CT=2) each, and vary the number of 
 			\hline Threads per memtier instance     & 2                        \\
 			\hline Virtual clients per thread       & [1..32]                  \\ 
 			\hline Workload                         & Write-only and Read-only \\
-			\hline Multi-Get behavior               & N/A                      \\
-			\hline Multi-Get size                   & N/A                      \\
-			\hline Number of middlewares            & N/A                      \\
-			\hline Worker threads per middleware    & N/A                      \\
-			\hline Repetitions                      & 3 or more                \\ 
 			\hline 
 		\end{tabular}
 	} 
 \end{center}
 
-\subsubsection{Explanation}
-
-Describe in which phase the memcached servers are under-saturated, saturated, or over-saturated. Describe how throughput and response time correlate. Explain what further conclusions can be drawn from the experiment.
-
-
+\subsubsection{Results and explanation}
+For a read only workload, we obtain the following plots for the latency and the throughput, for one client machine (the plots are very similar than the ones of the other client machines):
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline1/readOneVMThroughput.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline1/readOneVMLatency.png}
+\end{minipage}
+\\\\
+We notice that the maximum throughput is already obtained with 8 virtual clients per virtual machine and is then stable as we let the number of clients grow. This is, the memcached server starts to saturate when 3 VM with 2 threads and 8 virtual clients are querying a single server simultaneously. It is important to mention here that it is nearly impossible to over-saturate a server due to the way the memtier benchmark work: since we always run the clients with the default \textit{--pipeline=1} argument, every CPM\footnote{virtual client per memtier, see project description} will wait for an answer to come back before sending another request.
+\\
+For the latency, we clearly see that is inversely proportionnal to the througput (we distinguish three different slopes on both graphs). In the phase When the number of virtual clients grows at a constant rate (number of virtual clients getting bigger than 8), the throughput also gets constant. The reason why the throughput doesn't drop but stays at approximately 4000 operations/second is because the higher latency is compensated by a higher number of virtual clients to keep the throughput constant. 
+\\\\
+For a write-only workload, we obtain the following results:
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline1/writeOneVMThroughput.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline1/writeOneVMLatency.png}
+\end{minipage}
+\\\\\\
+For this workload, we note that we barely reach a saturated memcached server with 32 virtual clients, even if there is a clear drop in the growth of the throughput at 8 virtual clients. For write-only, the same observations apply as for the read-only workload. 
+\\\\
+However, we note a maximum throughput twice as high for sets than for gets, with a maximum latency twice as small. The differnce size of the messages beeing sent back and forth between the clients and the servers may not be the main factor, since for a get the messages are: 
+\begin{lstlisting}
+	request: get memtier-9999, 		answer: value memtier-9999 XXXXXX
+\end{lstlisting}
+and for the set they are:
+\begin{lstlisting}
+	request: set memtier-9999  0 10000 1024 XXXXX,	answer:  STORED
+\end{lstlisting}
+which are quite the same length. This implies that memcached is either storing values faster than getting values, either send the \textit{STORED} message back before starting the write operation, either having poorer performance than memtier benchmark when writting big messages to the connection sockets, or a combination of these factors. For this report, we will just keep in mind that the achieved throughput is higher with a write-only workload.
+   
 \subsection{Two Servers}
 
-For a read-only and write-only workload plot throughput and response time as a function of NumClients. The clients are connected to two memcached instances. 
-
-Use 1 load generating VM, with one memtier (CT=1) connected to each memcached instance (two memcache instances in total), and vary the number of virtual clients (VC) per memtier thread between 1 and 32. Show how the behavior of the server changes and explain what conclusions we can draw from this experiment.
+Now we are increasing the number of servers and putting a single client machine with a single thread to measure the see the performance limitations of the memtier clients with the following configurations:
 
 \begin{center}
 	\scriptsize{
@@ -206,47 +265,74 @@ Use 1 load generating VM, with one memtier (CT=1) connected to each memcached in
 			\hline Threads per memtier instance     & 1                        \\
 			\hline Virtual clients per thread       & [1..32]                  \\ 
 			\hline Workload                         & Write-only and Read-only \\
-			\hline Multi-Get behavior               & N/A                      \\
-			\hline Multi-Get size                   & N/A                      \\
-			\hline Number of middlewares            & N/A                      \\
-			\hline Worker threads per middleware    & N/A                      \\
-			\hline Repetitions                      & 3 or more (at least 1 minute each)                \\ 
 			\hline 
 		\end{tabular}
 	} 
 \end{center}
 
-\subsubsection{Explanation}
-
-Describe how this experiment compares to the previous section. Which results are the same and which ones differ? Explain what further conclusions can be drawn from the experiment.
-
-
+\subsubsection{Results and explanation}
+For a read-only workload, we obtain the following plots:
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline2/readInst1Throughput.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline2/readInst2Throughput.png}
+\end{minipage}
+\\\\
+Remember that the client machine has two instances each connected to a different memcached server. It is important to notice at this point that the maximal throughput achieved by the two instances are not equal. As shown on the next figures, this is because the latency is higher for one of the two servers, which may be because of their geographic location (The server located further away from the client machine results in a higher latency).
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline2/readInst1Latency.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline2/readInst2Latency.png}
+\end{minipage}
+\\\\
+For a write-only workload, we obtain for the server with higher througput similar plots for throughput and latency than for a read-only workload:
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline2/writeInst2Throughput.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline2/writeInst2Latency.png}
+\end{minipage}
+\\
+\\
+We see that the system starts to saturate for the two workloads when reaching 28 virtual clients per thread, with a maximum throughput of around 8000 operations per second for the instance with more higher throughput.  
+We also note that contrary to the last experiment with a single server, the throughput for write and read are similar. This proves for the last experiment, that the memcached server saturates under a high workload, but tends to be more scalable for get-only operations. On the other hand, a single client machine cannot produce a higher throughput than 8000 operations per second, for read and for write.   
 \subsection{Summary}
 
-Based on the experiments above, fill out the following table:
+
+Based on the experiments, we are now able to fill the table with the maximal throughputs for different configurations. For one memcached server, we use the results of one single client machine (which are representative of the results of the other client machines). For a single memtier client, we use the results of both instances to give a lower and upper bound (separated by a "/"). 
 
 \begin{center}
-	{Maximum throughput of different VMs.}
+	{Maximum throughput meaasured on one VM}
 	\begin{tabular}{|l|p{2cm}|p{2cm}|p{4cm}|}
 		\hline                        & Read-only workload & Write-only workload & Configuration gives max. throughput \\ 
-		\hline One memcached server   &                    &                     &                                     \\ 
-		\hline One load generating VM &                    &                     &                                     \\ 
+		\hline One memcached server   &4102                    &8430                     &8 VC for read-only, 32  VC for write-only                                     \\ 
+		\hline One load generating VM &6498/8146                    &6558/8287                     &28 VC                                     \\ 
 		\hline 
 	\end{tabular}
 \end{center}
+As explained in the previous sections, the key take-aways this experiment are the following:
 
+\begin{itemize}
+\item The achieved throughput by the memtier clients and even instances may be vary: because of the geographic positions of the clients or other factors. 
+\item The memcached servers saturate faster for a read-only workload. For a write-only workload, the throughput can be twice as high and is limited by the performance of the memtier clients. 
+\end{itemize}
+\newpage
 
-Write at least two paragraphs about how both results relate. Describe what is the bottleneck of this setup is. If the maximum throughput for both experiments is the same, explain why. If it is not the case, explain why not. Write down key take-away messages about the behaviour of the memtier clients and the memcached servers.
+\section{Baseline with Middleware}
 
-\section{Baseline with Middleware (90 pts)}
+In this set of experiments we want to take a closer look on the effect of the middleware on the system. For this purpose, we are running experiments with different workloads, a different number of worker threads in the middleware, and one or two middlewares. This will show us in what way the middleware influences the results found during experiment two. 
 
-In this set of experiments, you will have to use 1 load generator VM and 1 memcached server, measuring how the throughput of the system changes when increasing the number of clients. Scaling virtual clients inside memtier has to be done as explained in the previous sections. Plot both throughput and response time as measured on the middleware.
 
 \subsection{One Middleware}
 
-Connect one load generator machine (one instance of memtier with CT=2) to a single middleware and use 1 memcached server. Run a read-only and a write-only workload with increasing number of clients (between 2 and 64) and measure response time \emph{both at the client and at the middleware}, and plot the throughput and response time measured in the middleware.
-
-Repeat this experiment for different number of worker threads inside the middleware: 8, 16, 32, 64.
+We start the experiment by connecting a single client machine to the middleware and one memcached server, for different workloads and number of worker threads: 
 
 \begin{center}
 	\scriptsize{
@@ -257,17 +343,15 @@ Repeat this experiment for different number of worker threads inside the middlew
 			\hline Threads per memtier instance     & 2                        \\
 			\hline Virtual clients per thread       & [1..32]                  \\ 
 			\hline Workload                         & Write-only and Read-only \\
-			\hline Multi-Get behavior               & N/A                      \\
-			\hline Multi-Get size                   & N/A                      \\
 			\hline Number of middlewares            & 1                        \\
 			\hline Worker threads per middleware    & [8..64]                  \\
-			\hline Repetitions                      & 3 or more (at least 1 minute each)                \\ 
 			\hline 
 		\end{tabular}
 	} 
 \end{center}
 
-\subsubsection{Explanation}
+\subsubsection{Results and explanation}
+
 
 Provide a detailed analysis of the results (e.g., bottleneck analysis, component utilizations, average queue lengths, system saturation). Add any additional figures and experiments that help you illustrate your point and support your claims.
 
