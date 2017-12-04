@@ -74,7 +74,7 @@ def readLine(line,mwNumb):
 		
 
 for i in range(0,len(MWNumbers)):
-	statFile = open('mw01_thread'+str(MWNumbers[i])+".txt",'r');
+	statFile = open('mw01_thread'+str(MWNumbers[i])+"_ratio1_rep1.txt",'r');
 	for line in statFile:
 		readLine(line,i)
 

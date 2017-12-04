@@ -78,8 +78,8 @@ for i in range(0,len(MWNumbers)):
 	for line in statFile:
 		readLine(line,i)
 
-toPlot = timesInGet
-toPlotStd = timesInGetStd
+toPlot = timesInSet
+toPlotStd = timesInSetStd
 factor=1e6
 title = "Average answer time of memcached"
 xlabel = "number of virtual clients"
@@ -93,12 +93,12 @@ plt.ticklabel_format(style='sci')
 plt.title(title)
 plt.xlabel(xlabel)
 plt.ylabel(ylabel)
-plt.savefig('timesInGet')
+plt.savefig('timesInSet')
 
 toPlot = throughput
 toPlotStd = throughputStd
 factor=1
-title = "Throughput for one middleware"
+title = "Throughput for one VM"
 xlabel = "number of virtual clients"
 ylabel = "throughput [ops/s]"
 colors=['r','g','b','y']
@@ -115,7 +115,7 @@ plt.savefig('throughput')
 toPlot = serviceTimes
 toPlotStd = serviceTimesStd
 factor=1e6
-title = "Average service time in one MW"
+title = "Average service time in one VM"
 xlabel = "number of virtual clients"
 ylabel = "service time [ms]"
 colors=['r','g','b','y']
@@ -149,7 +149,7 @@ plt.savefig('timeInQueue')
 toPlot = queueLength
 toPlotStd = queueLengthStd
 factor=1
-title = "Average queue length of one MW"
+title = "Average queue length of one VM"
 xlabel = "number of virtual clients"
 ylabel = "Average queue length"
 colors=['r','g','b','y']
@@ -162,22 +162,5 @@ plt.title(title)
 plt.xlabel(xlabel)
 plt.ylabel(ylabel)
 plt.savefig('queueLength')
-
-toPlot = serviceTimes+timesInQueue
-toPlotStd = serviceTimesStd+timesInQueueStd
-factor=1e6
-title = "Average response time on one middleware"
-xlabel = "number of virtual clients"
-ylabel = "response time [ms]"
-colors=['r','g','b','y']
-fig,ax = plt.subplots()
-for i in range(0,len(MWNumbers)):
-	ax.errorbar(virtualClients,toPlot[i]/factor,toPlotStd[i]/factor,color=colors[i], label='MWT'+str(MWNumbers[i]),capsize=3)
-	ax.legend()
-plt.ticklabel_format(style='sci')
-plt.title(title)
-plt.xlabel(xlabel)
-plt.ylabel(ylabel)
-plt.savefig('responseTime')
 
 						

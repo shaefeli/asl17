@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-MWNumbers=[8,16,32,64]
+MWNumbers=[32,64]
 virtualClients=[1,2,4,8,16,32]
 
 timesInQueue=np.empty((len(MWNumbers),len(virtualClients)))
@@ -74,7 +74,7 @@ def readLine(line,mwNumb):
 		
 
 for i in range(0,len(MWNumbers)):
-	statFile = open('mw01_thread'+str(MWNumbers[i])+".txt",'r');
+	statFile = open('mw01_thread'+str(MWNumbers[i])+"_ratio0_rep2.txt",'r');
 	for line in statFile:
 		readLine(line,i)
 
@@ -98,7 +98,7 @@ plt.savefig('timesInGet')
 toPlot = throughput
 toPlotStd = throughputStd
 factor=1
-title = "Throughput for one middleware"
+title = "Throughput for one MW"
 xlabel = "number of virtual clients"
 ylabel = "throughput [ops/s]"
 colors=['r','g','b','y']
@@ -149,7 +149,7 @@ plt.savefig('timeInQueue')
 toPlot = queueLength
 toPlotStd = queueLengthStd
 factor=1
-title = "Average queue length of one MW"
+title = "Average queue length of one VM"
 xlabel = "number of virtual clients"
 ylabel = "Average queue length"
 colors=['r','g','b','y']
@@ -162,22 +162,5 @@ plt.title(title)
 plt.xlabel(xlabel)
 plt.ylabel(ylabel)
 plt.savefig('queueLength')
-
-toPlot = serviceTimes+timesInQueue
-toPlotStd = serviceTimesStd+timesInQueueStd
-factor=1e6
-title = "Average response time on one middleware"
-xlabel = "number of virtual clients"
-ylabel = "response time [ms]"
-colors=['r','g','b','y']
-fig,ax = plt.subplots()
-for i in range(0,len(MWNumbers)):
-	ax.errorbar(virtualClients,toPlot[i]/factor,toPlotStd[i]/factor,color=colors[i], label='MWT'+str(MWNumbers[i]),capsize=3)
-	ax.legend()
-plt.ticklabel_format(style='sci')
-plt.title(title)
-plt.xlabel(xlabel)
-plt.ylabel(ylabel)
-plt.savefig('responseTime')
 
 						

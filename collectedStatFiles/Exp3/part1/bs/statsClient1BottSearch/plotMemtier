@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 #used for plots:
 
-MWNumbers=[8,16,32,64]
+MWNumbers=[32,64]
 virtualClients=[1,2,4,8,16,32]
 
 setThroughput=np.empty((len(MWNumbers),len(virtualClients)))
@@ -24,7 +24,7 @@ totalHits=np.empty((len(MWNumbers),len(virtualClients)))
 totalMisses=np.empty((len(MWNumbers),len(virtualClients)))
 
 for i in range(0,len(MWNumbers)):
-	statFile = open('mwt'+str(MWNumbers[i])+'.txt','r');
+	statFile = open('client01inst1_ratio1:0_MWT'+str(MWNumbers[i])+'_rep2.txt','r');
 	vc=0;
 	for line in statFile:
 		if "Sets" in line:
@@ -51,7 +51,7 @@ for i in range(0,len(MWNumbers)):
 			totalThroughputB[i][vc]=float(wordsF[5]);
 			vc+=1		
 	
-toPlot = totalThroughput
+toPlot = totalLatency
 title = "Throughput for one VM"
 xlabel = "number of virtual clients"
 ylabel = "throughput [ops/s]"
@@ -63,21 +63,7 @@ for i in range(0,len(MWNumbers)):
 plt.title(title)
 plt.xlabel(xlabel)
 plt.ylabel(ylabel)
-plt.savefig('throughput')
-
-toPlot = totalLatency
-title = "Latency for one VM"
-xlabel = "number of virtual clients"
-ylabel = "Latency [ms]"
-colors=['r','g','b','y']
-fig,ax = plt.subplots()
-for i in range(0,len(MWNumbers)):
-	ax.plot(virtualClients,toPlot[i],color=colors[i], label='MWT'+str(MWNumbers[i]))
-	ax.legend()
-plt.title(title)
-plt.xlabel(xlabel)
-plt.ylabel(ylabel)
-plt.savefig('latency')	
+plt.show()	
 
 
 

@@ -200,7 +200,7 @@ The goal of this experiment is to study how the system would perform without the
 
 \subsection{One Server}
 
-First, we want to analyze the performance evolution of the memcached server, and eventually find its upper-bound in terms of performance. To achieve this, we set up one single memcached server beeing queried by a various number of clients, for read-only and write-only workloads. More precisely, we are running experiments in the following configuration:
+First, we want to analyze the performance evolution of the memcached server, and eventually find its upper-bound in terms of performance. To achieve this, we set up one single memcached server beeing queried by a various number of clients, for read-only and write-only workloads. More precisely, we are running experiments in the following configurations:
 \begin{center}
 	\scriptsize{
 		\begin{tabular}{|l|c|}
@@ -228,8 +228,8 @@ For a read only workload, we obtain the following plots for the latency and the 
 \\\\
 We notice that the maximum throughput is already obtained with 8 virtual clients per virtual machine and is then stable as we let the number of clients grow. This is, the memcached server starts to saturate when 3 VM with 2 threads and 8 virtual clients are querying a single server simultaneously. It is important to mention here that it is nearly impossible to over-saturate a server due to the way the memtier benchmark work: since we always run the clients with the default \textit{--pipeline=1} argument, every CPM\footnote{virtual client per memtier, see project description} will wait for an answer to come back before sending another request.
 \\
-For the latency, we clearly see that is inversely proportionnal to the througput (we distinguish three different slopes on both graphs). In the phase When the number of virtual clients grows at a constant rate (number of virtual clients getting bigger than 8), the throughput also gets constant. The reason why the throughput doesn't drop but stays at approximately 4000 operations/second is because the higher latency is compensated by a higher number of virtual clients to keep the throughput constant. 
-\\\\
+For the latency, we clearly see that is inversely proportionnal to the througput (we distinguish three different slopes on both graphs). In the phase When the number of virtual clients grows at a constant rate (number of virtual clients getting bigger than 8), the throughput also gets constant. The reason why the throughput doesn't drop but stays at approximately 4000 operations/second is because the higher latency is compensated by a higher number of virtual clients to keep the throughput constant. Also, as a sanity check, we can evaluate the interactive law. Knowing that the interactive law is :request time (w) = number of clients (N) / throughput (X), that for example at 8 virtual clients with two threads in the memtier client, N = 16 and the throughput X is approximately 3800 ops/sec,it gives us a reponse time of 4.2ms, which perfectly corresponds. This sanity check also works with the resting results of this experiment. 
+\\
 For a write-only workload, we obtain the following results:
 \\
 \begin{minipage}{0.5\linewidth}
@@ -301,18 +301,18 @@ For a write-only workload, we obtain for the server with higher througput simila
 \end{minipage}
 \\
 \\
-We see that the system starts to saturate for the two workloads when reaching 28 virtual clients per thread, with a maximum throughput of around 8000 operations per second for the instance with more higher throughput.  
+We see that the system starts to saturate for the two workloads when reaching 28 virtual clients per thread, with a maximum throughput of around 8000 operations per second for the instance with higher throughput.  
 We also note that contrary to the last experiment with a single server, the throughput for write and read are similar. This proves for the last experiment, that the memcached server saturates under a high workload, but tends to be more scalable for get-only operations. On the other hand, a single client machine cannot produce a higher throughput than 8000 operations per second, for read and for write.   
 \subsection{Summary}
 
 
-Based on the experiments, we are now able to fill the table with the maximal throughputs for different configurations. For one memcached server, we use the results of one single client machine (which are representative of the results of the other client machines). For a single memtier client, we use the results of both instances to give a lower and upper bound (separated by a "/"). 
+Based on the experiments, we are now able to fill the table with the maximal throughputs for different configurations. To make the results suitable for comparison with the rest of the experiments, we sum up the throughputs observed on the different client machines. For the experiment with a single memtier client, we use the results of both instances to give a lower and upper bound (separated by a "/"). 
 
 \begin{center}
 	{Maximum throughput meaasured on one VM}
 	\begin{tabular}{|l|p{2cm}|p{2cm}|p{4cm}|}
 		\hline                        & Read-only workload & Write-only workload & Configuration gives max. throughput \\ 
-		\hline One memcached server   &4102                    &8430                     &8 VC for read-only, 32  VC for write-only                                     \\ 
+		\hline One memcached server   &11289                    &23836                     &8 VC for read-only, 32  VC for write-only                                     \\ 
 		\hline One load generating VM &6498/8146                    &6558/8287                     &28 VC                                     \\ 
 		\hline 
 	\end{tabular}
@@ -320,8 +320,9 @@ Based on the experiments, we are now able to fill the table with the maximal thr
 As explained in the previous sections, the key take-aways this experiment are the following:
 
 \begin{itemize}
-\item The achieved throughput by the memtier clients and even instances may be vary: because of the geographic positions of the clients or other factors. 
+\item The achieved throughput by the memtier clients and even instances may vary: because of the geographic positions of the clients or other factors. 
 \item The memcached servers saturate faster for a read-only workload. For a write-only workload, the throughput can be twice as high and is limited by the performance of the memtier clients. 
+\item The numbers of the first line in the table represent the max throughput a memcached server can achieve, as the second line represents the maximum workload a memtier client can achieve. 
 \end{itemize}
 \newpage
 
@@ -352,16 +353,61 @@ We start the experiment by connecting a single client machine to the middleware 
 
 \subsubsection{Results and explanation}
 
+The throughput and the response time for a read-only workload measured on the middleware give the following plots (the plots for write-only are the same)(rep1 used):
 
-Provide a detailed analysis of the results (e.g., bottleneck analysis, component utilizations, average queue lengths, system saturation). Add any additional figures and experiments that help you illustrate your point and support your claims.
+\begin{center}
+\includegraphics[scale=0.8]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/throughput.png}
+\end{center}
+\begin{center}
+\includegraphics[scale=0.8]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/responseTime.png}
+\end{center}
 
+Note that the response time mesured is the addition of the service time and the waiting time in the queue, as showed by the two following plots. 
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/serviceTime.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/timeInQueue.png}
+\end{minipage}
+\\
+The service time of the middleware is extremely close to the time it takes to send and receive an answer from the memcached server (the difference can be neglected). Since the parsing times are very small compared to the answer time of memcached, the answer time and the service time are quasi equal. 
+\\
+The interactive law is also respected for the configurations where the maximum throughput is achieved. If we take for example 16 middleware worker threads and 32 virtual clients, we obtain N = 64, X = 6000, and thus w = 10 ms, which is not far from what we ploted (In reality, as we will see later, the time spent in the middleware, known as "think time" has also to be taken in account). 
+\\
+From the four of these plots, we see that the middleware is the bottleneck for a configuration with 8 and 16 middleware worker threads, since the throughput stays constant after respectively 8 and 16 virtual client and, as seen in the last experiment, the maximum throughput that can be achieved by memtier is higher than the throughputs achieved here. More precisely, the bottleneck in the middleware is the time a request spends in the queue, as shown by the strongly growing curve of the average time in queue for 8 worker threads for example. This strong growth is also correlated to the average queue length: as shown in the next figure, the queue length is growing with the time a request spends in queue, since the middleware has not enough thread available to execute the requests. 
+\begin{center}
+\includegraphics[scale=0.5]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/queueLength.png}
+\end{center}
+As a sanity check, we also plot the latency and the throughput observed on the middleware:
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsClient/ratio0:1/rep1/throughput.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsClient/ratio0:1/rep1/latency.png}
+\end{minipage}
+\\
+There are two interesting points to notice: first, the throughput measured on the middleware is equal to the one measured on the memtier VM, which is due to the way memtier works. As explained in section 1, one memtier CPM doesn't send a new request until the last one has not been received. Secondly, the graph of the latency is similar as the one for the response time on the middleware, but shifted by 2ms on the y-axis, which is due to the travelling time between the middleware and the memtier client. 
+\\
+\\
+As a last point, because we haven't reached a saturated middleware with 32 and 64 worker threads, we re-run the experiment with increased number of generating client VM number (2), to obtain the following results:
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs/statsMWBottSearch/throughput.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs/statsMWBottSearch/timeInQueue.png}
+\end{minipage}
+\\
+We note that by increasing the workload, we are able to saturate the middleware with 32 worker threads, again, dut to a slope change in the queuing time. For 64 worker threads, we are tending to reach a saturated state at around 11000 operations per second, which also corresponds to the maximum throughput a memcached server can achieve with a read-only workload. To make sure that the middleware becomes the bottleneck under high workload even with 64 worker threads, we have run all this experiment with a write-only workload also, and obtain for every configuration and every statistics the same plots. Seen that the maximum throughput of the memcached server under a write-only workload was around 20000 ops/second, we can conclude that the middleware will start to become the bottleneck under any configuration if the throughput is high enough. 
+   
 \subsection{Two Middlewares}
 
-Connect one load generator machine (two instances of memtier with CT=1) to two middlewares and use 1 memcached server. Run a read-only and a write-only workload with increasing number of clients (between 2 and 64) and measure response time \emph{both at the client and at the middleware}, and plot the throughput and response time as measured in the middleware.
-
-Repeat this experiment for different number of worker threads inside the middleware: 8, 16, 32, 64.
-
-If in your experiment the middleware is not the bottleneck, repeat the experiment that reaches the highest throughput but using two load generator VMs (each with 2x memtier CT=1) instead of one. Otherwise, explain how you know that the middlewares are the limiting factor in terms of throughput.
+We continue the experiment by connecting one client VM with two instances of memtier to two different middlewares VMs and one memcached server:
 
 \begin{center}
 	\scriptsize{
@@ -372,33 +418,48 @@ If in your experiment the middleware is not the bottleneck, repeat the experimen
 			\hline Threads per memtier instance     & 1                        \\
 			\hline Virtual clients per thread       & [1..32]                  \\ 
 			\hline Workload                         & Write-only and Read-only \\
-			\hline Multi-Get behavior               & N/A                      \\
-			\hline Multi-Get size                   & N/A                      \\
 			\hline Number of middlewares            & 2                        \\
 			\hline Worker threads per middleware    & [8..64]                  \\
-			\hline Repetitions                      & 3 or more (at least 1 minute each)                \\ 
 			\hline 
 		\end{tabular}
 	} 
 \end{center}
+\subsubsection{Results and explanation}
 
-\subsubsection{Explanation}
-
-Provide a detailed analysis of the results (e.g., bottleneck analysis, component utilizations, average queue lengths, system saturation). Add any additional figures and experiments that help you illustrate your point and support your claims.
-
+We obtain the following plots for the throughput and response time measured on one middleware:
+\\
+\begin{minipage}{0.49\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/normal/mw1/throughput.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.49\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/normal/mw1/responseTime.png}
+\end{minipage}
+\\
+We directly notice that the difference of throughput and reponse time between different number of worker threads configuration isn't as significant as during the last experiment. As we will see on the next plots, this is because the high queuing time for a lower number of worker threads is compensated by a low service time and inversely. 
+\\
+\begin{minipage}{0.49\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/normal/mw1/serviceTime.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.49\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/normal/mw1/timeInQueue.png}
+\end{minipage}
+\\ 
+hihihihi
 \subsection{Summary}
-
+Note that bs was not same time than other
 Based on the experiments above, fill out the following table. For both of them use the numbers from a single experiment to fill out all lines. Miss rate represents the percentage of GET requests that return no data. Time in the queue refers to the time spent in the queue between the net-thread and the worker threads.
 
 
 \begin{center}
 	{Maximum throughput for one middleware.}
 	\begin{tabular}{|l|p{2cm}|p{2cm}|p{2cm}|p{2cm}|}
-		\hline                                & Throughput & Response time & Average time in queue & Miss rate \\ 
-		\hline Reads: Measured on middleware  &            &               &                       &           \\ 
-		\hline Reads: Measured on clients     &            &               & n/a                   &           \\ 
-		\hline Writes: Measured on middleware &            &               &                       & n/a       \\ 
-		\hline Writes: Measured on clients    &            &               & n/a                   & n/a       \\ 
+		\hline                                & Throughput & Response time[ms] & Average time in queue[ms] & Miss rate \\ 
+		\hline Reads: Measured on middleware  &10638           &6.69              &2.07                       &14\%           \\ 
+		\hline Reads: Measured on clients     &10266            &12.25               &-                  &14\%           \\ 
+		\hline Writes: Measured on middleware &10477            &7.17               &2.13                       &-      \\ 
+		\hline Writes: Measured on clients    &10128            &12.63               &-                  &-       \\ 
 		\hline 
 	\end{tabular}
 \end{center}

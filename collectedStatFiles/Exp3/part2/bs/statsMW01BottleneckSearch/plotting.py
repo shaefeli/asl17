@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-MWNumbers=[8,16,32,64]
+MWNumbers=[32,64]
 virtualClients=[1,2,4,8,16,32]
 
 timesInQueue=np.empty((len(MWNumbers),len(virtualClients)))
@@ -74,7 +74,7 @@ def readLine(line,mwNumb):
 		
 
 for i in range(0,len(MWNumbers)):
-	statFile = open('mw01_thread'+str(MWNumbers[i])+".txt",'r');
+	statFile = open('mw01_thread'+str(MWNumbers[i])+"_ratio1_rep2.txt",'r');
 	for line in statFile:
 		readLine(line,i)
 
