@@ -1,0 +1,42 @@
+Experience 2: 
+	2.1 (from baseline1 folder):
+		client02inst1_ratio0:1_rep3.txt
+		client02inst1_ratio1:0_rep3.txt
+	2.2 (from baseline2 folder):
+		client01inst2_ratio0:1_rep1.txt
+		client01inst1_ratio0:1_rep1.txt
+		client01inst2_ratio1:0_rep1.txt
+	2.3 (Summary)
+		same as above
+
+Experience 3:
+	3.1 (from part1, normal, statsMW)  and (from part1, normal, statsClient)
+		ratio0:1/rep1
+		ratio0:1/rep1
+		(from part1, bs, statsMW)
+		mw01_thread64_ratio0_rep1.txt
+	3.2 (from part2, nomal,statsMW01)
+		mw01_thread64_ratio0_rep1.txt
+		mw01_thread64_ratio1_rep1.txt
+		(from part2, bs, statsMW01)
+		mw01_thread64_ratio0_rep1.txt
+		mw01_thread64_ratio1_rep1.txt
+		
+	3.3 (Summary)
+		(from part2, bs, statsMW01 and statsMW02)
+		mw01_thread64_ratio0_rep1.txt
+		mw01_thread64_ratio1_rep1.txt	
+		mw02_thread64_ratio0_rep1.txt
+		mw02_thread64_ratio1_rep1.txt
+		(from part2, bc, statsClient1 and statsClient2)
+		client01inst1_ratio0:1_MWT64_rep1.txt
+		client01inst2_ratio0:1_MWT64_rep1.txt
+		client01inst1_ratio1:0_MWT64_rep1.txt
+		client01inst2_ratio1:0_MWT64_rep1.txt
+		client02inst1_ratio0:1_MWT64_rep1.txt
+		client02inst2_ratio0:1_MWT64_rep1.txt
+		client02inst1_ratio1:0_MWT64_rep1.txt
+		client02inst2_ratio1:0_MWT64_rep1.txt		
+
+Experience 4:
+

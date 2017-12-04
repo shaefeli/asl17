@@ -353,7 +353,7 @@ We start the experiment by connecting a single client machine to the middleware 
 
 \subsubsection{Results and explanation}
 
-The throughput and the response time for a read-only workload measured on the middleware give the following plots (the plots for write-only are the same)(rep1 used):
+The throughput and the response time for a read-only workload measured on the middleware give the following plots (the plots for write-only are the same):
 
 \begin{center}
 \includegraphics[scale=0.8]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/throughput.png}
@@ -380,7 +380,7 @@ From the four of these plots, we see that the middleware is the bottleneck for a
 \begin{center}
 \includegraphics[scale=0.5]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/queueLength.png}
 \end{center}
-As a sanity check, we also plot the latency and the throughput observed on the middleware:
+As a sanity check, we also plot the latency and the throughput observed on the client:
 \\
 \begin{minipage}{0.5\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsClient/ratio0:1/rep1/throughput.png}
@@ -426,13 +426,13 @@ We continue the experiment by connecting one client VM with two instances of mem
 \end{center}
 \subsubsection{Results and explanation}
 
-We obtain the following plots for the throughput and response time measured on one middleware:
+We obtain the following plots for the throughput and response time measured on one middleware with similar plots for read-only and write-only workloads:
 \\
-\begin{minipage}{0.49\linewidth}
+\begin{minipage}{0.48\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/normal/mw1/throughput.png}
 \end{minipage}
 \hfill
-\begin{minipage}{0.49\linewidth}
+\begin{minipage}{0.48\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/normal/mw1/responseTime.png}
 \end{minipage}
 \\
@@ -445,12 +445,29 @@ We directly notice that the difference of throughput and reponse time between di
 \begin{minipage}{0.49\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/normal/mw1/timeInQueue.png}
 \end{minipage}
-\\ 
-hihihihi
-\subsection{Summary}
-Note that bs was not same time than other
-Based on the experiments above, fill out the following table. For both of them use the numbers from a single experiment to fill out all lines. Miss rate represents the percentage of GET requests that return no data. Time in the queue refers to the time spent in the queue between the net-thread and the worker threads.
+\\\\ 
+We should also take in consideration that the workload exerced on one middleware is halved compared to last experiment seen that there is only one thread per memtier instance and not two, which explains why the average time in queue for 8 worker threads only stats to grow faster after 16 virtual clients as opposed to 8. Furthermore, the throughput at saturation for 8 middleware threads is equal to the last experiment. 
+Deducing from the previous experiment where we learnt that the bottleneck in the middleware is the queuing time, and the graphs above, the middleware hasn't reached its maximal throughput for the other configurations. 
+\\\\
+However, when we double the load on the middlewares, we can see that our middleware isn't the bottleneck of the experiment if we put a high number of worker thread, but the memcached server. If we remember the conclusions from the baseline without middleware, the read-only achieves a smaller maximal throughput than the write-only, and that's why we can suddently see a big difference in terms of throughput between the two workloads, since we showed during the last experiment that the middleware achieves the same performance for the two workloads when it is the bottleneck. This is shown by the following two graphs, the left one beeing a read-only workload and the right one a write-only workload (rep 2 mw1 used).   
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/bs/statsMW01BottleneckSearch/ratio0/throughput.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/bs/statsMW01BottleneckSearch/ratio1/throughput.png}
+\end{minipage}
+\\\\
+To confirm our claim, the calculation of the total throughput of the two middlewares on the single memcached server for a read and write only are (The two middlewares don't have the same throughput, but their statistics have exactly the same shape):
+\\\textit{read : 4173+7043 = 11216 operations/second}
+\\\textit{write : 5452+10753 = 16205 operations/second}
+Hence, because the maximal throughput of a single memcached server for read-only workload was 11289, and 23836 for write-only, this proves that the memcached server is the bottleneck for this further experiment. This is, we can reach the memcached server upper-bound with a configuration with 64 worker thread and 2 connected middlewares. 
 
+
+
+\subsection{Summary}
+The maximum throughputs for different configurations are summarized in the following table. The throughputs are beeing added over all the VM as well for the middlewares than the clients. 
 
 \begin{center}
 	{Maximum throughput for one middleware.}
@@ -464,21 +481,28 @@ Based on the experiments above, fill out the following table. For both of them u
 	\end{tabular}
 \end{center}
 
+For this experiment, we take the average of the times since both middlewares don't have the same throughput. 
 \begin{center}
 	{Maximum throughput for two middlewares.}
 	\begin{tabular}{|l|p{2cm}|p{2cm}|p{2cm}|p{2cm}|}
 		\hline                                & Throughput & Response time & Average time in queue & Miss rate \\ 
-		\hline Reads: Measured on middleware  &            &               &                       &           \\ 
-		\hline Reads: Measured on clients     &            &               & n/a                   &           \\ 
-		\hline Writes: Measured on middleware &            &               &                       & n/a       \\ 
-		\hline Writes: Measured on clients    &            &               & n/a                   & n/a       \\ 
+		\hline Reads: Measured on middleware  &11216            &10.21               &1.09                       &0.1\%           \\
+		\hline Reads: Measured on clients     & 11618            &12.246               &-                   &0.1\%           \\ 
+		\hline Writes: Measured on middleware &16205            &6.305               &0.93                       &-       \\ 
+		\hline Writes: Measured on clients    &16019            &8.915               &-                   &-       \\ 
 		\hline 
 	\end{tabular}
 \end{center}
 
-Based on the data provided in these tables, write at least two paragraphs summarizing your findings about the performance of the middleware in the baseline experiments.
+As explained in the previous sections, the key take-aways for this experiment are the following:
 
-\section{Throughput for Writes (90 pts)}
+\begin{itemize}
+\item The bottleneck of the middleware is the queuing time of the requests. When the number of worker threads is too low, this value tends to grow very fast.  
+\item The same observation applies for a configuration with two middlewares. If the performance of the memcached servers and memtier benchmark clients were infinitely good, we would expect a performance as twice as high than for one middleware, since they are running independently. But this is not the case and could show that we can achieve the upper-bound of the memcached server with two middlewares. 
+\end{itemize}
+\newpage
+
+\section{Throughput for Writes}
 
 \subsection{Full System}
 
@@ -494,11 +518,8 @@ You need to plot throughput and response time measured on the middleware as a fu
 			\hline Threads per memtier instance     & 1          \\
 			\hline Virtual clients per thread       & [1..32]    \\ 
 			\hline Workload                         & Write-only \\
-			\hline Multi-Get behavior               & N/A        \\
-			\hline Multi-Get size                   & N/A        \\
 			\hline Number of middlewares            & 2          \\
 			\hline Worker threads per middleware    & [8..64]    \\
-			\hline Repetitions                      & 3 or more (at least 1 minute each)  \\ 
 			\hline 
 		\end{tabular}
 	} 
