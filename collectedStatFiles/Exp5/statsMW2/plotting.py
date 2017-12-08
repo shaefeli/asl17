@@ -115,7 +115,7 @@ def readLine(line):
 			timesInMGetMemHist9.append(wordsPerClass[3])
 	
 
-statFile = open('mw02_shardedtrue_rep1.txt','r');
+statFile = open('mw02_shardedfalse_rep1.txt','r');
 for line in statFile:
 	readLine(line)
 
@@ -133,41 +133,41 @@ plt.savefig('HistMGetsize6')
 plt.close()
 
 
-toPlot1 = [timesInMGetHist9[i]+timesInQueueHist9[i] for i in range(len(timesInQueueHist9))]
-toPlot1 = [toPlot1[i]/1e6 for i in range(len(toPlot))]
-plt.hist(toPlot1,rwidth=0.7)
-title = "Distribution of the response time for multi get requests"
-xlabel = "response time [ms]"
-ylabel = "Number of requests"
-plt.title(title)
-plt.xlabel(xlabel)
-plt.ylabel(ylabel)
-plt.savefig('HistMGetsize9')
-plt.close()
+#toPlot1 = [timesInMGetHist9[i]+timesInQueueHist9[i] for i in range(len(timesInQueueHist9))]
+#toPlot1 = [toPlot1[i]/1e6 for i in range(len(toPlot))]
+#plt.hist(toPlot1,rwidth=0.7)
+#title = "Distribution of the response time for multi get requests"
+#xlabel = "response time [ms]"
+#ylabel = "Number of requests"
+#plt.title(title)
+#plt.xlabel(xlabel)
+#plt.ylabel(ylabel)
+#plt.savefig('HistMGetsize9')
+#plt.close()
 
-toPlot2 = [timesInGetHist9[i]+timesInQueueHist9[i] for i in range(len(timesInQueueHist9))]
-toPlot2 = [toPlot2[i]/1e6 for i in range(len(toPlot2))]
-plt.hist(toPlot2,rwidth=0.7)
-title = "Distribution of the response time for get requests"
-xlabel = "response time [ms]"
-ylabel = "Number of requests"
-plt.title(title)
-plt.xlabel(xlabel)
-plt.ylabel(ylabel)
-plt.savefig('HistGetSize9')
-plt.close()
+#toPlot2 = [timesInGetHist9[i]+timesInQueueHist9[i] for i in range(len(timesInQueueHist9))]
+#toPlot2 = [toPlot2[i]/1e6 for i in range(len(toPlot2))]
+#plt.hist(toPlot2,rwidth=0.7)
+#title = "Distribution of the response time for get requests"
+#xlabel = "response time [ms]"
+#ylabel = "Number of requests"
+#plt.title(title)
+#plt.xlabel(xlabel)
+#plt.ylabel(ylabel)
+#plt.savefig('HistGetSize9')
+#plt.close()
 
-fig,ax = plt.subplots()
-ax.hist(toPlot1,rwidth=0.7,color='b')
-ax.hist(toPlot2,rwidth=0.7,color='b')
-title = "Distribution of the response time for get and multi get requests"
-xlabel = "response time [ms]"
-ylabel = "Number of requests"
-plt.title(title)
-plt.xlabel(xlabel)
-plt.ylabel(ylabel)
-plt.savefig('HistGetAndMSize9')
-plt.close()
+#fig,ax = plt.subplots()
+#ax.hist(toPlot1,rwidth=0.7,color='b')
+#ax.hist(toPlot2,rwidth=0.7,color='b')
+#title = "Distribution of the response time for get and multi get requests"
+#xlabel = "response time [ms]"
+#ylabel = "Number of requests"
+#plt.title(title)
+#plt.xlabel(xlabel)
+#plt.ylabel(ylabel)
+#plt.savefig('HistGetAndMSize9')
+#plt.close()
 
 
 mGetSizeString=["1","3","6","9"]

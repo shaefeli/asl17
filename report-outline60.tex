@@ -584,14 +584,10 @@ The key take-aways for this experiment are the following:
 
 \section{Gets and Multi-gets}
 
-For this set of experiments you will use three load generating machines, two middlewares and three memcached servers. Each memtier instance should have 2 virtual clients in total and the number of middleware worker threads is 64, or the one that provides the highest throughput in your system (whichever number of threads is smaller).
-
-For multi-GET workloads, memtier will generate a mixture of SETs, GETs, and multi-GETs. Memtier only allows to specify the maximum number of keys in a multi-GET request. Therefore, be aware that requests can also contain fewer keys than the provided value. It is recommended to record the average size of the multi-GETs. You will have to measure response time on the client as a function of multi-get size, with and without sharding on the middlewares.
+In this set of experiments we will have a closer look to the behaviour of the system with get and multi-get requests. First, the sharded case, where the middleware splits the requests among the servers, and secondly the non-sharded case, where the request is handled as a normal get. 
 
 \subsection{Sharded Case}
-
-Run multi-gets with 1, 3, 6 and 9 keys (memtier configuration) with sharding enabled (multi-gets are broken up into smaller multi-gets and spread across servers). Plot average response time as measured on the client, as well as the 25th, 50th, 75th, 90th and 99th percentiles.
-t
+The memtier worklad is adapted so that memtier sends one set alternated with one multi get of the key-size we want. Also, we use 64 middleware threads to achieve maximum throughput. 
 
 \begin{center}
 	\scriptsize{
@@ -601,8 +597,8 @@ t
 			\hline Instances of memtier per machine & 2                       \\ 
 			\hline Threads per memtier instance     & 1                       \\
 			\hline Virtual clients per thread       & 2     		            \\ 
-			\hline Workload                         & memtier-default             \\
-			\hline Multi-Get behavior               & Sharded/Non-sharded                 \\
+			\hline Workload                         & [1:1, 1:3, 1:6, 1:9]           \\
+			\hline Multi-Get behavior               & Sharded                \\
 			\hline Multi-Get size                   & [1, 3, 6, 9]                  \\
 			\hline Number of middlewares            & 2                       \\
 			\hline Worker threads per middleware    & 64 \\
@@ -611,13 +607,46 @@ t
 	} 
 \end{center}
 
-\subsubsection{Explanation}
+\subsubsection{Results and explanations}
+First, we analyze a couple of statistics on the middleware to understand its behaviour. The throughput and the service time in the middleware are plotted:
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW1//shardedtrue/serviceTime.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW1//shardedtrue/throughput.png}
+\end{minipage}
+\\\\
+We observe that the service time increases with the key size, which is normal since the processing the middlware has to do for different key sizes is approximately equivalent, but the time taken by the server to process the request and sending the packet back is higher for a bigger key amount. For the sharded case, we know that the middleware has to split the requests into different servers, which may cause a bigger processing time. However, this additional processing time can be neglected as shown by the following graphics (The left one represents the total time a requests spents in the multi get handling, whereas the right graphics shows the wating time for memcached in the multi get handling). In fact the differences between the two is in micro seconds. 
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW1//shardedtrue/timesInMGet.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW1//shardedtrue/timesInMGetMem.png}
+\end{minipage}
+\\\\
+Two comments have to be made regarding these graphs: first, we see that there is no statistics for a key size of 1, this is because a multi get with size one is handled as a get in the middleware and thus isn't part of the multi get statistics. Secondly, we observe that the time spent in the multi get handling is equivalent to the service time. This is because the parsing time of a request is still very small even if the size of the message grows.
+\\
+In the previous sections, we discovered that the time spent in the queue was the bottleneck of our system. However, in a multi get configuration this isn't the case any more, as showed by the following figure, which plots the time spent in queue:  
+ \begin{center}
+\includegraphics[scale=0.6]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW1//shardedtrue/timesInQueue.png}
+\end{center}
 
-Provide a detailed analysis of the results (e.g., bottleneck analysis, component utilizations, average queue lengths, system saturation). Add any additional figures and experiments that help you illustrate your point and support your claims.
+
+On the client side, a closer look is taken to the latency distribution of the requests. The plotted line represents the average lateny. The colors represent the percentage of the requests that are in a certain latency range. Hence, the top of a given color bar is a percentile. Thus, the top edge of the colors represent respectively the 25th, 50th, 75th, 90th and 99th percentile. 
+  
+ \begin{center}
+\includegraphics[scale=0.7]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsClient1//shardedTrue/latency.png}
+\end{center}
+
+We observe a similar behaviour than on the middleware with a small growth of the latency and that the values are clustered around the average as expected. A closer look at the distribution of the latency will be made at the end of this section. 
 
 \subsection{Non-sharded Case}
 
-Run multi-gets with 1, 3, 6 and 9 keys (memtier configuration) with sharding disabled. Plot average response time as measured on the client, as well as the 25th, 50th, 75th, 90th and 99th percentiles.
+The middleware is now beeing run in non-sharded mode. A multi-get request is therefor handled in the same way as a normal get. 
 
 \begin{center}
 	\scriptsize{
@@ -627,43 +656,78 @@ Run multi-gets with 1, 3, 6 and 9 keys (memtier configuration) with sharding dis
 			\hline Instances of memtier per machine & 2                       \\ 
 			\hline Threads per memtier instance     & 1                       \\
 			\hline Virtual clients per thread       & 2                		 \\ 
-			\hline Workload                         & memtier-default             \\
+			\hline Workload                         & [1:1, 1:3, 1:6, 1:9]             \\
 			\hline Multi-Get behavior               & Non-Sharded             \\
 			\hline Multi-Get size                   & [1..9]                  \\
 			\hline Number of middlewares            & 2                       \\
-			\hline Worker threads per middleware    & max. throughput config. \\
-			\hline Repetitions                      & 3 or more (at least 1 minute each)               \\ 
+			\hline Worker threads per middleware    & 64 \\
 			\hline 
 		\end{tabular}
 	} 
 \end{center}
 
-\subsubsection{Explanation}
+\subsubsection{Results and explanations}
 
-Provide a detailed analysis of the results (e.g., bottleneck analysis, component utilizations, average queue lengths, system saturation). Add any additional figures and experiments that help you illustrate your point and support your claims.
+The results are extremely similar to the sharded case: we observe a growth of the latency with number of keys in the multi get. The latency as observed on the middleware and on the clients are shown as followed: 
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW1//shardedfalse/timesInMGet.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsClient1/shardedFalse/latency.png}
+\end{minipage}
+\\\\
+For this part, there is no surprise regarding the obtained results. As the key size grows, the memcached server needs more time to process the request and send the answer back, and thus we observe a growth of the latency. A detailed comparison between the sharded and non sharded case can be found under the two next sections. 
 
 \subsection{Histogram}
 
-For the case with 6 keys inside the multi-get, display four histograms representing the sharded and non-sharded response time distribution, both as measured on the client, and inside the middleware. Choose the bucket size in the same way for all four, and such that there are at least 10 buckets on each of the graphs.
+The distribution of the latency as measured on the middleware and the client, for both sharded and non sharded case, for a key size of 6, gives the following plots (The histograms are constructed in a way so that bins having less than one request are not displayed):
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsClient1/shardedTrue/histogram6.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW1/shardedtrue/HistMGetsize6.png}
+\end{minipage}
+\\
+\\
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsClient1/shardedFalse/histogram6.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.5\linewidth}
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW1/shardedfalse/HistMGetsize6.png}
+\end{minipage}
+
 
 \subsection{Summary}
 
-Provide a detailed comparison of the sharded and non-shareded modes. For which multi-GET size is sharding the preferred option? Provide a detailed analysis of your system. Add any additional figures and experiments that help you illustrate your point and support your claims.
-
-\section{2K Analysis (90 pts)}
-
-For 3 client machines (with 64 total virtual clients per client VM) measure the throughput and response time of your system in a 2k experiment with repetitions. All GET operations have a single key. Investigate the following parameters:
-
+All the histograms seem to follow a gaussian distribution around a shifted mean. First, we notice that measured on the client is slightly higher than the one meaasured on the middleware, due to the travelling time between the middleware and the client. Secondly, more interesting, the latency is on average higher in the sharded case than in the non sharded case. 
+\\
+This can be explained by the followings: 
 \begin{itemize}
-		
-	\item Memcached servers: 2 and 3
-	\item Middlewares: 1 and 2
-	\item Worker threads per MW: 8 and 32
-	      	      
-\end{itemize}
+\item The server performance is similar if it receives 2 keys in the get requests (in the sharded case with 3 servers) or 6 keys. This claim can be proved by looking at the graph in section 5.2, where we see that the difference of time spent in the multi get handling between 3 and 6 keys , i.e the waiting time for the memcached server, is very small. Hence, reducing the key size from 6 to 2 isn't significant enough to observe a significant differnce in latency. 
+With a multi get key size of 9, the difference wouldn't have been significant either, by refering to the same graph again, since the request would have been split in sizes of 3. A major difference could have had been observed if we had a key size of n which overwhelms the server, whereas a size of n/3 doesn't. However, n=9 isn't enough to overwhelm the server, even with a very low miss ratio (1\%)
+\item The way the middleware handles a multi-get request in the sharded mode isn't optimal. The pattern followed by the multi get handling is the same as the one for a set request, namely: 
+\begin{lstlisting}
+	1				prepare the splitted requests
+	2				send to server 1
+	3				send to server 2
+	4				send to server 3
+	5				wait for answer 1 until received
+	6				wait for answer 2 until received
+	7				wait for answer 3 until received
+	8				merge the answers and send back to client
+\end{lstlisting}
+Like we discussed in the previous section, the point 1 is extremely efficient and can be neglected. However, waiting sequentially for an answer from a server can be bad if the response times are different as explained for set request. 
+\end{itemize}  
 
-Repeat the experiment for (a)~a write-only, (b)~a read-only, and (c)~a 50-50-read-write workload.
-For each of the three workloads, what is the impact of these parameters on throughput, respectively response time?
+\newpage
+\section{2K Analysis}
+
+\subsection{Parameters of the experiment}
 
 \begin{center}
 	\scriptsize{
@@ -674,15 +738,13 @@ For each of the three workloads, what is the impact of these parameters on throu
 			\hline Threads per memtier instance     & 1                                           \\
 			\hline Virtual clients per thread       & 32                                     \\ 
 			\hline Workload                         & Write-only, Read-only, and 50-50-read-write \\
-			\hline Multi-Get behavior               & N/A                                         \\
-			\hline Multi-Get size                   & N/A                                         \\
 			\hline Number of middlewares            & 1 and 2                                     \\
 			\hline Worker threads per middleware    & 8 and 32                                    \\
-			\hline Repetitions                      & 3 or more (at least 1 minute each)                                   \\ 
 			\hline 
 		\end{tabular}
 	} 
 \end{center}
+\subsection{Results and explanation}
 
 \section{Queuing Model (90 pts)}
 

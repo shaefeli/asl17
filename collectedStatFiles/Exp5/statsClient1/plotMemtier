@@ -32,7 +32,7 @@ getHistOnePercents=[]
 getHistogramSeconds =[]
 getHistogramPercents =[]
 
-statFile = open('client01inst1_sharded0_rep1.txt','r');
+statFile = open('client01inst1_sharded1_rep1.txt','r');
 mGs=0;
 isReadingGet = False;
 for line in statFile:
@@ -110,11 +110,11 @@ p2 = plt.bar(ind, differences1, width=bar_width, bottom=percentiles25, color='c'
 p3 = plt.bar(ind, differences2, width=bar_width, bottom=percentiles50, color='y')
 p4 = plt.bar(ind, differences3, width=bar_width, bottom=percentiles75, color='r')
 p5 = plt.bar(ind, differences4, width=bar_width, bottom=percentiles90, color='m')
-plt.plot(mGetSizeString,toPlot , linewidth=3)
+plt.plot(mGetSizeString ,toPlot , linewidth=3)
 plt.title(title)
 plt.xlabel(xlabel)
 plt.ylabel(ylabel)
-plt.xticks(ind, mGetSizeString)
+#plt.xticks(ind, mGetSizeString)
 plt.legend((p1[0], p2[0],p3[0],p4[0],p5[0]), ('25%', '25%','25%','15%','9%'))
 plt.savefig('latency')
 plt.close()
@@ -153,14 +153,10 @@ for i in range(0,len(mGetSize)):
 		idu = find_nearest_index(np.array(getHistogramSeconds[i]),upper)
 		percUpper = getHistogramPercents[i][idu]
 		percLower = getHistogramPercents[i][idl]
-		print(percUpper)
-		print(percLower)
 		valPerBinOneSize.append(((percUpper-percLower)/100)*getThroughput[i])
 	valPerBin.append(valPerBinOneSize)
-	print(valPerBinOneSize)
 	plt.bar(binsString,valPerBinOneSize,bar_width)
-	plt.show()
-	#plt.savefig('histogram'+str(mGetSizeString[i]))
+	plt.savefig('histogram'+str(mGetSizeString[i]))
 	plt.close()
 	valPerBinOneSize=[]	
 
