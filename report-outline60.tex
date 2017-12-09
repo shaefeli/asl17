@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage{enumerate}
 \usepackage{tikz}
+
 \usepackage[bottom]{footmisc}
 \usetikzlibrary{shapes, arrows, positioning, fit, backgrounds}
 \usepackage{color}
@@ -769,20 +770,86 @@ Finally, the number of worker threads is again the main contributor to the varia
 The response time and the throughput tables for the other workloads are very similar and are not treated in this report (but can be found in the \textit{SummaryStats.ods} file), since the same comments apply to them. 
 \newpage
 \section{Queuing Model}
-ARRETE LA CORRECTION ICI!!
-Note that for queuing models it is enough to use the experimental results from the previous sections. It is, however, possible that the numbers you need are not only the ones in the figures we asked for, but also the internal measurements that you have obtained through instrumentation of your middleware.
+So far, statistics have been collected, plotted and analyzed. We now want to model our system to be able to predict these different statistics. The statistics that we calculate and compare with the statistics collected on a single middleware are taken from the book \textit{The Art of computer systems performance analysis by Raj Jain}, pages 532 and 536. 
 
 \subsection{M/M/1}
 
-Build queuing model based on Section 4 (write-only throughput) for each worker-thread configuration of the middleware. Use one M/M/1 queue to model your entire system. Motivate your choice of input parameters to the model. Explain for which experiments the predictions of the model match and for which they do not.
+To model our system as a M/M/1 model, the statistics collected from experiment 4 are used. 
+The M/M/1 model is a basic modelling system that models one queue with exponentially distributed  service times and arrival rate (the two "M"), and one "server". In our case, this means that the M/M/1 model represents a system where the requests arrive on one unique queue and are beeing processed by a "single-processor" system, i.e one unique thread that takes and processes the requests from the queue.
+\\
+To be able to model our system as a M/M/1 model, we need to tweak the results somehow to make it appropriate to be used to calculate the statistics. In our middleware, we computed the mean service time that a worker thread takes to process a request, which is -as can be seen in the stat files- representative of the service time of a single worker thread. Assuming that this mean service time is the service time of the "single-processor" is incorrect: it leads to assume that one request is beeing handled during the average service time of a worker thread. In fact, if the number of worker threads on the middleware is \textit{mwt}, approximately {mwt} request are beeing handled during this time lapse, since they are run in parallel! (Since we can assume that context switching and other artifacts can be neglected). In consequence, the service time that we are using to calculate these statistics is: 
+\[\frac{service time}{mwt}\]
+\\
+The queuing model M/M/1 computes the traffic intensity, which is the ratio between the arrival rate and the service rate. If this ratio is smaller than 1, the system is said to be "stable", otherwise it is "unstable". In our case, having a ratio bigger than 1 means that the middleware is saturated, i.e too many requests are coming in that can be processed, and a ratio of 1 is beeing obtained, when the throughput starts to flatten out. As we discussed in the \textit{System overview} section, a ratio bigger than 1 is quasi impossible to achieve because memtier won't send more requests than what it receives back. However, due to errors small errors linked to statistics gathering can lead to having a ratio slightly over 1, even if it should be a little bit less than 1 in reality. For this reason, we will not be able to analyze the system when the ratio is getting close to 1, as the system will be described as "unstable".
+\\\\
+We start by computing the different statistics for a middleware configuration with 8 threads for 2 virtual clients, which gives an arrival rate of 1568 requests/sec and a service time of 2813709ns per thread. As discussed previously, we use 2813709/8 = 351713ns as an input for the service time. The output from these calulations are\footnote{P0: probability of having 0 jobs in the system\\P1/P2: probability of having 1 respecitvely two jobs in the system}: 
+\begin{center}
 
+		\begin{tabular}{|c|c|c|c|c|c|}
+			  \hline
+			  \textbf{P0} & \textbf{P1/P2} & \textbf{Jobs in system} & \textbf{Jobs in queue} & \textbf{response time[ms]} & \textbf{time in queue[ms]}\\
+			  \hline
+			  0.44 & 0.25/0.14 & 1.22 & 0.67 & 0.61 & 0.43 \\
+			  \hline
+		\end{tabular}
+ 
+\end{center}
+\newpage
+ When comparing to the statistics\footnote{from the exp4 folder, mw01, thread16, rep3 file}, we see that the number of jobs in the system and number of jobs in the queue correspond! For the number of jobs in the system, since we modelled the system as an M/M/1 model, with the service time beeing serviceTime/mwt, the number of jobs in the system will be 1.22*mwt in reality, which is what we have in this configuration. 
+ \\
+However, the time spent in the queue doesn't correspond at all to what we measured on our middleware. This is because our system can simply not be modelled correctly with a M/M/1 model: In this model, it is assumed that a "single server", i.e a single thread is handling the incoming requests. Assuming that mwt requests are beeing handled in a time period T (multiple threads) is the same as one request is beeing handled in T/mwt time (single thread) doesn't work to model a queue. This is because multiple threads take requests from the queue in a round-robin fashion, whereas the single thread model takes one request at the time, executes it completely before taking another request. 
+
+  
 \subsection{M/M/m}
 
-Build an M/M/m model based on Section 4, where each middleware worker thread is represented as one service.  Motivate your choice of input parameters to the model. Explain for which experiments the predictions of the model match and for which they do not.
+To model our system as a M/M/m model, the experiment 4 statistics are used again.
+The M/M/m model has the same interarrival properties and queuing properties than the M/M/1 model. The only and crucial difference is that multiple "servers" are handling the requests beeing queued. In our case, multiple threads are handling the requests. A priori, this modelling seems to represent our system much better. We will know see if this claim can be verified. 
+\\
+First of all, the same comment about the stability of the system applies to the M/M/m model: A ratio between the arrival rate and the service rate multiplied by the number of worker threads beeing bigger than 1 leads to an unstable system and the statistics cannot be computed. We compute the statistics with the same configuration as before, 8 worker threads, 1568 request/seconds for the arrival rate, and 2813709ns for the service time:
 
+\begin{center}
+
+		\begin{tabular}{|c|c|c|c|c|c|}
+			  \hline
+			  \textbf{P0} & \textbf{Jobs in system} & \textbf{Jobs in queue} & \textbf{response time[ms]} & \textbf{time in queue[ms]}\\
+			  \hline
+			  0.012  & 4.41 & 0.23 & 2.82 & 0.07 \\
+			  \hline
+		\end{tabular}
+ 
+\end{center}
+The probability distribution of the number of jobs in the system is plotted on the following chart: 
+\begin{center} 
+\includegraphics[scale=0.7]{/home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp7/nJobsInSystem1.png}
+\end{center} 
+For the M/M/m model, the response time and the queuing time are predicted right, with a very small queuing time and a response time. The mean number of jobs in the queue also corresponds to the gathered statistics. However, it seems with the chart, that the system is under used, with a probability of only 5\% that all the worker threads are in use. We want to verifiy that claim by taking a higher arrival rate with the same configuration, i.e 4 virtual clients, which gives an arrival rate of 2513 requests/second and a service time of 3036419ns. 
+This leads to the following values:
+ \begin{center}
+
+		\begin{tabular}{|c|c|c|c|c|c|}
+			  \hline
+			  \textbf{P0} & \textbf{Jobs in system} & \textbf{Jobs in queue} & \textbf{response time[ms]} & \textbf{time in queue[ms]}\\
+			  \hline
+			  0.0001  & 18.52 & 10 & 3.05 & 4.33 \\
+			  \hline
+		\end{tabular}
+ 
+\end{center} 
+\begin{center} 
+\includegraphics[scale=0.7]{/home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp7/nJobsInSystem2.png}
+\end{center} 
+The system is now clearly used at its full rate. The queuing time grows bigger and corresponds to the statistics (this matches to the experiment 4, where we saw that the queuing time became the bottleneck with more than 4 virtual clients). Also, the number of jobs in the queue, which is the total number of jobs in the system minus the number of worker threads also corresponds to the gathered statistics. 
+\\
+\\
+
+To conclude this part, we see that the M/M/m model is a much more suitable model for our middleware system than the M/M/1 model. It allows to predict the number of jobs in the queue, the jobs in the system, the response time and the queuing time. As long as the ratio stays under 1, our system corresponds to a M/M/m model\footnote{More configurations have been tested here and lead to the same conclusion. To test more configurations, just choose a stable workload, and run the script \textit{mmm} found in the Scripts folder of experience 7, by putting the arrival rate, service time and number of worker threads to the good values}.  
+
+\newpage
 \subsection{Network of Queues}
-
-Based on Section 3, build a network of queues which simulates your system. Motivate the design of your network of queues and relate it wherever possible to a component of your system. Motivate your choice of input parameters for the different queues inside the network. Perform a detailed analysis of the utilization of each component and clearly state what the bottleneck of your system is. Explain for which experiments the predictions of the model match and for which they do not.
+Note to do: 
+-Add used statistics for section 7 and 6
+-Correct all
+-Write this part
 
 \end{document}
 \grid
