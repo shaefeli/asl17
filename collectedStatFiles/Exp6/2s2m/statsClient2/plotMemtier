@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+import numpy as np
+import matplotlib.pyplot as plt
+
+#used for plots:
+
+MWInstances=["1","2"]
+repetitions=["1","2","3"]
+ratio=["0:1","1:0","1:1"]
+
+totalThroughput8= np.empty([len(ratio),len(repetitions)])
+totalLatency8=np.empty([len(ratio),len(repetitions)])
+totalThroughput32=np.empty([len(ratio),len(repetitions)])
+totalLatency32=np.empty([len(ratio),len(repetitions)])
+
+for i in range(0,len(ratio)):
+	for j in range(0,len(repetitions)):
+		read8 = 1;
+		totalT8 = 0;
+		totalT32 = 0;
+		totalL8 = 0
+		totalL32 = 0;
+		statFile1 = open('client02inst'+MWInstances[0]+'_ratio'+ratio[i]+'_rep'+repetitions[j]+'.txt','r');
+		statFile2 = open('client02inst'+MWInstances[1]+'_ratio'+ratio[i]+'_rep'+repetitions[j]+'.txt','r');
+		for line in statFile1:
+			if "Totals" in line:
+				words = line.split(" ")
+				wordsF = [a for a in words if a!='']
+				if read8 == 1:
+					totalT8 += float(wordsF[1])
+					totalL8 = float(wordsF[4])
+					read8 = 0;
+				else:
+					totalT32 += float(wordsF[1])
+					totalL32 = float(wordsF[4])
+					read8 = 1;
+				
+		for line in statFile2:
+			if "Totals" in line:
+				words = line.split(" ")
+				wordsF = [a for a in words if a!='']
+				if read8 == 1:
+					totalT8 += float(wordsF[1])
+					read8 = 0;
+				else:
+					totalT32 += float(wordsF[1])
+					read8=1
+	
+		totalThroughput8[i,j] = totalT8
+		totalThroughput32[i,j] = totalT32
+		totalLatency8[i,j] = totalL8
+		totalLatency32[i,j] = totalL32
+		totalT8 = 0;
+		totalT32 = 0;
+		totalL8 = 0
+		totalL32 = 0;
+		
+print("throughputs for 8")
+print(totalThroughput8)
+print("latency for 8")
+print(totalLatency8)
+print("throughput for 32")
+print(totalThroughput32)
+print("latency for 32")
+print(totalLatency32)	
+
+
+
+						

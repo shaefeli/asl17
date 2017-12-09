@@ -726,9 +726,9 @@ Like we discussed in the previous section, the point 1 is extremely efficient an
 
 \newpage
 \section{2K Analysis}
-
+In this section we perform a 2k analysis with 3 parameters and 3 repetitions. We want to analyze the explained variation of the number of servers, the number of worker threads and the number of middlewares. 
 \subsection{Parameters of the experiment}
-
+The following configuration are beeing experimented:
 \begin{center}
 	\scriptsize{
 		\begin{tabular}{|l|c|}
@@ -745,9 +745,31 @@ Like we discussed in the previous section, the point 1 is extremely efficient an
 	} 
 \end{center}
 \subsection{Results and explanation}
-
-\section{Queuing Model (90 pts)}
-
+The full calculations for this 2\textsuperscript{3}*3 analysis can be found in the excel sheet called \textit{SummaryStats.ods}. The final results obtained for a 2k analysis for the throughput are displayed here:
+\begin{center} 
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp6/tro.png}
+\end{center}
+The obtained results are as expected, not a surprise. 
+\\
+For the throughput, the contribution of the variation of the number of servers is very low. As it could be seen during the last experiments, the time spent in queue in the middleware has always been the bottleneck of our system when using a single get workload. In addition, as observed in experiment 5, using more servers doesn't improve the total time waiting for the memcached server(s), and thus, changing the number of servers only explains few variation. 
+\\
+The explained variation is basically shared between the the single contribution of the increase of the number of middlewares, and the single contribution of the increase of the numer of worker threads. This point has also been highlighted the previous experiments: The throughput increases drastically with the number of worker threads, and increases up to a certain point with two middlewares because of the memcached server capacity and that's why the variation explained by the middleware is twice as high than the variation explained by the number of worker threads. This is the last proof that the times in queue is the biggest bottleneck in our system, and that changing its value influences a lot on the throughput. 
+\\We note finally note that the different factors of this experiment are quite independent since their combined values are very low. 
+\newpage
+For the response time, the 2k analysis leads to the following results:
+\\
+\begin{center} 
+\includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp6/rro.png}
+\end{center} 
+For the response time, we note that the contributions are all negative. This is, because of the fact that if we increase a factor (for example from 8 worker threads to 32), we decrease the response time. 
+\\
+For the reponse time, only the variation of the number of middleware threads has an influence on the response time. The number of servers has (quasi) no influence on the response time, for the same reason that it didn't have for the throughput. On the other hand, the number of middleware has also no influence on the response time, because the response time on two middlewares are independent of each other as long as the memcached servers (which are the same for the two middlewares) are not saturated, which is not the case as we can observe in this table. In the case where the servers would be oversaturated, we would have a positive contribution for qM. 
+Finally, the number of worker threads is again the main contributor to the variation of response time. For the same reasons as for the troughput, a higher number of worker threads leads to a lower queuing time and thus a faster response time. 
+\\\\
+The response time and the throughput tables for the other workloads are very similar and are not treated in this report (but can be found in the \textit{SummaryStats.ods} file), since the same comments apply to them. 
+\newpage
+\section{Queuing Model}
+ARRETE LA CORRECTION ICI!!
 Note that for queuing models it is enough to use the experimental results from the previous sections. It is, however, possible that the numbers you need are not only the ones in the figures we asked for, but also the internal measurements that you have obtained through instrumentation of your middleware.
 
 \subsection{M/M/1}
