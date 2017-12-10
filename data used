@@ -52,6 +52,7 @@ Experience 6:
 	All stats from exp6 folder were used to calculate the final values (see excel sheet)
 
 Experience 7:
-	M/M/1: mw01_thread8_rep1.txt
-	M/M/m: first: mw01_thread8_rep1.txt
+	M/M/1: exp4, mw01_thread8_rep1.txt
+	M/M/m: exp4, first: mw01_thread8_rep1.txt
 		second: mw01_thread8_rep1.txt
+	NOQ: exp3, part1, normal, ratio0:1 or 1:0, mw01, rep1
