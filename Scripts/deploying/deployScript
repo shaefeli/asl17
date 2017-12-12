@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+scp -i ~/.ssh/azure -o StrictHostKeyChecking=no /home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp5/exp5C1 shaefeli@shaefeliforaslvms1.westeurope.cloudapp.azure.com:~/memtier_benchmark-master
+
+scp -i ~/.ssh/azure -o StrictHostKeyChecking=no /home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp5/exp5C2 shaefeli@shaefeliforaslvms2.westeurope.cloudapp.azure.com:~/memtier_benchmark-master
+
+scp -i ~/.ssh/azure -o StrictHostKeyChecking=no /home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp5/exp5C3 shaefeli@shaefeliforaslvms3.westeurope.cloudapp.azure.com:~/memtier_benchmark-master
+
+scp -i ~/.ssh/azure -o StrictHostKeyChecking=no /home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp5/exp5M1 shaefeli@shaefeliforaslvms4.westeurope.cloudapp.azure.com:~/code
+
+scp -i ~/.ssh/azure -o StrictHostKeyChecking=no /home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp5/exp5M2 shaefeli@shaefeliforaslvms5.westeurope.cloudapp.azure.com:~/code
+

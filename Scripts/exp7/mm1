@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+
+arrivalRate=2903;
+serviceTime=3122635;
+m=16;
+serviceTime=serviceTime/m
+nJobs = 30;
+
+serviceTime = serviceTime/1000000;
+arrivalRate = arrivalRate/1000;
+
+serviceRate = 1/serviceTime;
+A = arrivalRate/(serviceRate)
+
+if A>=1:
+	print("System is unstable")
+	print(A)
+else:
+	#proba of zero jobs in system:
+	po = 1-A
+
+	#proba of n jobs in system:
+	pn = np.empty(nJobs)
+	for n in range(1,nJobs+1):
+		pn[n-1] = (1-A)*math.pow(A,n)
+
+	#mean number of jobs in system
+	En = A/(1-A)
+
+	#proba of k jobs in queueing
+	pk = np.empty(nJobs)
+	for k in range(0,nJobs):
+		if k==0:
+			pk[k] = 1-A*A
+		else:	
+			pk[k] = (1-A)*math.pow(A,k+1) 
+	
+	
+	
+	
+	#mean number of jobs in the queue
+	Eq = A*A/(1-A)
+	
+	#mean response time
+	Er = (1/(serviceRate*serviceRate))/math.pow((1-A),2)
+
+	#mean waiting time
+	Ew = A*((1/serviceRate)/(1-A))
+
+	
+	#print all statistics
+	print("proba of zero jobs in system:")
+	print(po)
+	print("proba of n jobs in system")
+	print(pn)
+	print("Proba of k jobs queuing")
+	print(pk)
+	print("Mean number of jobs in system")
+	print(En)
+	print("Mean number of jobs in the queue")
+	print(Eq)
+	print("Mean response time")
+	print(Er)
+	print("mean waiting time")
+	print(Ew)
+	
+
+						

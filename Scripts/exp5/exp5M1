@@ -17,7 +17,7 @@ do
 		do	
 			for r in "${MGetSize[@]}"
 			do
-				timeout $runTime java -jar asl-fall17-project.jar -l 10.0.0.7 -p 6800 -t ${t} -s ${s} -m 52.178.72.89:3000 52.178.76.230:3001 52.178.72.152:3002 &
+				timeout $runTime java -jar asl-fall17-project.jar -l 10.0.0.7 -p 6800 -t ${t} -s ${s} -m 52.166.105.59:3000 52.166.105.67:3001 52.166.91.106:3002 &
 				sleep $perMWTime 
 			done
 			mv statistics.txt stats/mw01_sharded${s}_rep${rep}.txt

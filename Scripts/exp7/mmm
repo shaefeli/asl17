@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+
+arrivalRate=2513;
+serviceTime=3036419;
+m=8;
+nJobs = 30;
+
+serviceTime = serviceTime/1000000;
+arrivalRate = arrivalRate/1000;
+
+print(arrivalRate)
+serviceRate = 1/serviceTime;
+print(serviceRate)
+A = arrivalRate/(serviceRate*m)
+if A>=1:
+	print("System is unstable")
+	print(A)
+else:
+	print("A")
+	print(A)
+	#proba of zero jobs in system:
+	intermediateSum=0;
+	for n in range(1,m):
+		intermediateSum+= math.pow(m*A,n)/math.factorial(n)
+	firstTerm = 1+ (math.pow(m*A,m)/(math.factorial(m)*(1-A)))
+	po = 1/(firstTerm+intermediateSum);
+
+	#proba of n jobs in system:
+	pn = np.empty(nJobs)
+	for n in range(1,nJobs+1):
+		if n<m:
+			pn[n-1] = po*(math.pow(m*A,n)/(math.factorial(n)))
+		else:
+			pn[n-1] = po* math.pow(A,n)*math.pow(m,m)/math.factorial(m)
+
+	n = range(1,nJobs+1)
+	plt.bar(n[0:11],pn[0:11])
+	title = "Probability of n jobs in the system"
+	xlabel = "n"
+	ylabel = "probability"
+	plt.title(title)
+	plt.xlabel(xlabel)
+	plt.ylabel(ylabel)
+	plt.savefig('nJobsInSystem3')
+	plt.close()
+
+
+	#proba of queuing:
+	l = 0
+	for i in range(m,nJobs):
+		l = l+pn[i]
+	
+	#mean number of jobs in system
+	En = m*A + (A*l/(1-A))
+	
+	#mean number of jobs in the queue
+	Eq = En*l
+	
+	#mean response time
+	Er = 1/serviceRate*(1+(l/m*(1-A)))
+
+	#mean waiting time
+	Ew = l/(m*serviceRate*(1-A))
+
+	
+	#print all statistics
+	print("proba of zero jobs in system:")
+	print(po)
+	print("proba of n jobs in system")
+	print(pn)
+	print("Proba of queuing")
+	print(l)
+	print("Mean number of jobs in system")
+	print(En)
+	print("Mean number of jobs in the queue")
+	print(Eq)
+	print("Mean response time")
+	print(Er)
+	print("mean waiting time")
+	print(Ew)
+	
+
+						

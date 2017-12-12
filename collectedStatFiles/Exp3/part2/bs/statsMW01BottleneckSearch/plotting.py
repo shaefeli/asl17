@@ -74,7 +74,7 @@ def readLine(line,mwNumb):
 		
 
 for i in range(0,len(MWNumbers)):
-	statFile = open('mw01_thread'+str(MWNumbers[i])+"_ratio1_rep2.txt",'r');
+	statFile = open('mw01_thread'+str(MWNumbers[i])+"_ratio0_rep2.txt",'r');
 	for line in statFile:
 		readLine(line,i)
 
@@ -98,7 +98,7 @@ plt.savefig('timesInGet')
 toPlot = throughput
 toPlotStd = throughputStd
 factor=1
-title = "Throughput for one middleware"
+title = "Throughput for one middleware, read-only"
 xlabel = "number of virtual clients"
 ylabel = "throughput [ops/s]"
 colors=['r','g','b','y']

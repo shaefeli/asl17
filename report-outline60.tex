@@ -63,16 +63,16 @@
 
 \section{System Overview}
 \subsection{Abstract}
-This project consisted of designing, implementing and evaluating the performance of a key-value store network system. We added a so called middleware between the memtier benchmark clients and the memcached servers that was able to forward the requests and answers and do some processing for certain particular requests. In this report, we are first discussing the way the middleware has been implemented, analyze results of different experiments and finally modelling our system. 
+This project consisted of designing, implementing and evaluating the performance of a key-value store network system. We added a so called middleware between the memtier benchmark clients and the memcached servers that was able to forward the requests and answers and do some processing for certain particular requests. In this report, we are first discussing the way the middleware has been implemented, analyze results of different experiments and finally modelling our system.\footnote{To get an overview of the files of this project, please refer to the README, found at the root of the project} 
 \subsection{General design and implementation particularities}
-Even though the general structure of the middleware was clearly defined, the components of the middlware asked for some important design choices. Here follow a small overview of the different implementation choices. 
+Even though the general structure of the middleware was clearly defined, the components of the middlware asked for some important design choices. Here follows a small overview of the different implementation choices. 
 
 \begin{center}
-\includegraphics[scale=0.7]{baseIm.png}
+\includegraphics[scale=0.69]{baseIm.png}
 \end{center}
 \begin{enumerate}[ {(}1{)} ]
-\item The net thread is the thread that accepts connections from the clients, and reads the incoming requests to put them in the request queue (2). The \textit{Java.nio} (non-blocking IO) package was used to achieve this purpose: A \textit{ServerSocketChannel} was used as a welcome socket to accept connections from the clients by creating for each client a \textit{SocketChannel}, and a \textit{Selector} was used to iterate over the the sockets (the connection sockets and the welcome socket) to find entering requests for the middleware or connection requests. Using the \textit{Java.nio} allows us not only to abstract the handling of a various number of connections, but also it iterates over the client connections in an optimal way by using \textit{SelectionKeys}. 
-\item The request queue is a java \textit{LinkedBlockingQueue}, which has the useful properties to be unbounded and beeing FCFS. Requests wait in this queue until a worker thread is free.   
+\item The net thread is the thread that accepts connections from the clients, and reads the incoming requests to put them in the request queue (2). The \textit{Java.nio} (non-blocking IO) package was used to achieve this purpose: a \textit{ServerSocketChannel} was used as a welcome socket to accept connections from the clients by creating for each client a \textit{SocketChannel}, and a \textit{Selector} was used to iterate over the sockets (the connection sockets and the welcome socket) to find entering requests for the middleware or connection requests. Using \textit{Java.nio} allows us not only to abstract the handling of a various number of connections, but also it iterates over the client connections in an optimal way by using \textit{SelectionKeys}. 
+\item The request queue is a java \textit{LinkedBlockingQueue}, which has the useful properties to be unbounded and beeing FCFS\footnote{First come first serve}. Requests wait in this queue until a worker thread is free.   
 
 \item The request queue and the worker threads are both managed by the java \textit{ThreadPoolExecutor}. The thread pool executor, which definition is: 
 \begin{lstlisting}
@@ -101,14 +101,14 @@ We now want to look closer at the implementation of the middleware and how the p
     % Place nodes
     \node [block] (RunMW) {\textbf{\underline{RunMW}} \\ \textit{main(): starts the mw}};
     \node [block, below=0.7cm of RunMW] (MyMiddleware) {\textbf{\underline{MyMiddleware}} \\ \textit{run(): reads the text from the socket and creates a prerequest}};
-    \node [block, left=3cm of MyMiddleware, text width=8em] (Params) {\underline{Params} \\ inputs predefined parameters};
+    \node [block, left=3cm of MyMiddleware, text width=8em] (Params) {\underline{static Params} \\ inputs predefined parameters};
     \node [block, right=2cm of MyMiddleware] (PreRequest) {\textbf{\underline{PreRequest}} \\ \textit{PreRequest(): creates an object with the text and a starting time}};
     \node [block, below of=MyMiddleware] (QueueHandler) {\textbf{\underline{QueueHandler}} \\ \textit{putToQueue(): calls the threadPoolExecutor execute function on the Prerequest}};
     \node [block, left=3cm of QueueHandler, text width=11em] (StatisticsAggregator) {\textbf{\underline{StatisticsAggregator}} \\ \textit{run(): Gets statistics from different classes every time window, processes and stores them in the Statistics class}};
-     \node [block, below of=StatisticsAggregator, text width=8em] (Statistics) {\underline{Statistics} \\ Contains the aggregated statistics};
+     \node [block, below of=StatisticsAggregator, text width=8em] (Statistics) {\underline{static Statistics} \\ Contains the aggregated statistics};
       \node [block, below=1cm of QueueHandler] (RequestHandler) {\textbf{\underline{RequestHandler}} \\ \textit{run(): creates a Request to parse the PreRequest and calls the appropriate handling function}};
       \node [block, right=2cm of RequestHandler, text width=8em] (Request) {\textbf{\underline{Request}} \\ \textit{Request(): parses the text received from the client with the correct RequestType}};
-      \node [block, above of=Request] (RequestType) {\underline{RequestType} \\ Contains the different request types};
+      \node [block, above of=Request] (RequestType) {\underline{static RequestType} \\ Contains the different request types};
       \node [cloud, below=0.8cm of RequestHandler] (HandleGet) {HandleGet()};
       \node [cloud, right=0.5cm of HandleGet] (HandleSet) {HandleSet()};
       \node [cloud, left=0.5cm of HandleGet] (HandleMGet) {HandleMGet()};
@@ -133,9 +133,7 @@ We now want to look closer at the implementation of the middleware and how the p
     \path [line] (RequestHandler) -- (HandleGet);
     \path [line] (RequestHandler) -- (HandleSet);
 \end{tikzpicture}
-
-\newpage
-
+\\\\
 To make some correpondencies with the general structure of the middleware presented in section 1.2, we see that the \textit{MyMiddleware run()} function represents the net thread, the \textit{QueueHandler} class has a \textit{ThreadPoolExecutor} field that manages the request queue and the call of the worker thread, and that the \textit{RequestHandler run()} function represents one worker thread. We may also note that a PreRequest class is beeing created before putting the received message into the queue. This is to bind the message with a time, to be able to track the time a message spends in the queue. 
 \\\\
 At the end of the pipeline, the different requests are treated according to their type (get, set, or multi-get). In case of a set, the request is sent to all memcached servers sequentially, after what the worker thread waits for all the answers, also sequentially, as showed in the next line in the case of 3 memcached servers. 
@@ -154,7 +152,7 @@ In case of a get request, we simply forward the request to a given server. To de
 \\
 In case of a multi-get, two cases are possible: In the non-sharded case, the request is simply being executed as a normal get. In the sharded case, the multi get is beeing splitted equally accross the different available memcached servers.   
 \\\\
-Finally, since we want the connections between the middleware and the servers to be open before running the experiments, we need to initialize these once for every worker thread. By defining the sockets in a \textit{ThreadLocal} in the \textit{RequestHandler} class, the initialization of the sockets will happen only the first time a worker thread is beeing called. That's why every thread is called once during the initialization phase of the middleware, by executing number of worker threads times the "init" requests, which are fake requests that don't need any special handling.\footnote{According to the javadoc of the ThreadPoolExecutor class, "When a new task is submitted in method execute(java.lang.Runnable), and fewer than corePoolSize threads are running, a new thread is created to handle the request, even if other worker threads are idle". And that's why it is enough to run corePoolSize number of requests to have them run all once and thus initialized their sockets.} 
+Finally, since we want the connections between the middleware and the servers to be open before running the experiments, we need to initialize these once for every worker thread. By defining the connection sockets with the servers in a \textit{ThreadLocal} in the \textit{RequestHandler} class, the initialization of the sockets will happen only the first time a worker thread is beeing called. That's why every thread is called once during the initialization phase of the middleware, by executing number of worker threads times the "init" requests, which are fake requests that don't need any special handling.\footnote{According to the javadoc of the ThreadPoolExecutor class, "When a new task is submitted in method execute(java.lang.Runnable), and fewer than corePoolSize threads are running, a new thread is created to handle the request, even if other worker threads are idle". And that's why it is enough to run corePoolSize number of requests to have them run all once and thus initialized their sockets.} 
 
 \subsection{Statistics gathering}
 Statistics have to be made in different classes accross the middleware, either a count (number of gets, number of sets,...), or an average (queue length, time in queue,...). These statistics are being stored in static atomic fields in the respective classes that can be gotten from the \textit{StatisticsAggregator} class which is a \textit{Runnable} called every second, the first time at initialization of the middleware. These statistics are then collected every given time window, averaged and stored in the \textit{Statistics} class. This process is beeing illustrated in the next figure:
@@ -194,7 +192,7 @@ Statistics have to be made in different classes accross the middleware, either a
 \\\\
 The collected statistics in the \textit{Statistics} class are then being filtered, by removing the warm-up time (according to some experiments I made, the middlware needs around 10 seconds to get stable data) and the cool down time (1 second), and removing the zero values that are present before and after the significative values (zeros that occur because of the late start of a memtier client for example or an early stop). 
 \\
-Finally, when the middleware is shut down, the average and standard deviation of every statistic is being computed and printed to a file. Depending on the experiment, we sometimes also print all the values to construct histograms.
+Finally, when the middleware is shut down, thanks to a shutdown hook, the average and standard deviation of every statistic is being computed and printed to a file. Depending on the experiment, we sometimes also print all the values to construct histograms.
 \newpage  
 \section{Baseline without Middleware}
 The goal of this experiment is to study how the system would perform without the middleware. This part is important to get a better idea of what the performance limitations of the memcached servers and the memtier benchmark clients are, so we can better judge the impact of the middleware through the rest of the experiments. 
@@ -217,7 +215,7 @@ First, we want to analyze the performance evolution of the memcached server, and
 \end{center}
 
 \subsubsection{Results and explanation}
-For a read only workload, we obtain the following plots for the latency and the throughput, for one client machine (the plots are very similar than the ones of the other client machines)\footnote{To see which file has been used for which plot/table thoughout the report, please refer to the data.txt file}:
+For a read only workload, we obtain the following plots for the latency and the throughput, for one client machine (the plots are very similar than the ones of the other client machines)\footnote{exp2/baseline1/client02inst1\_ratio0:1\_rep3.txt}
 \\
 \begin{minipage}{0.5\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline1/readOneVMThroughput.png}
@@ -227,11 +225,12 @@ For a read only workload, we obtain the following plots for the latency and the 
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline1/readOneVMLatency.png}
 \end{minipage}
 \\\\
-We notice that the maximum throughput is already obtained with 8 virtual clients per virtual machine and is then stable as we let the number of clients grow. This is, the memcached server starts to saturate when 3 VM with 2 threads and 8 virtual clients are querying a single server simultaneously. It is important to mention here that it is nearly impossible to over-saturate a server due to the way the memtier benchmark work: since we always run the clients with the default \textit{--pipeline=1} argument, every CPM\footnote{virtual client per memtier, see project description} will wait for an answer to come back before sending another request.
+We notice that the maximum throughput is already obtained with 8 virtual clients per virtual machine and is then stable as we let the number of clients grow. This is, the memcached server starts to \underline{saturate} when 3 VM with 2 threads and 8 virtual clients are querying a single server simultaneously. It is important to mention here that it is nearly impossible to \underline{over-saturate} a server due to the way the memtier benchmark work: since we always run the clients with the default \textit{--pipeline=1} argument, every CPM\footnote{virtual client per memtier, see project description} will wait for an answer to come back before sending another request.
 \\
-For the latency, we clearly see that it is inversely proportionnal to the throughput (we distinguish three different slopes on both graphs). In the phase when the number of virtual clients grows at a constant rate (number of virtual clients getting bigger than 8), the throughput also gets constant. The reason why the throughput doesn't drop but stays at approximately 4000 operations/second is because the higher latency is compensated by a higher number of virtual clients to keep the throughput constant. Also, as a sanity check, we can evaluate the interactive law. Knowing that the interactive law is : \[ request time (w) = \frac{number of clients (N)}{throughput (X)}\] that for example at 8 virtual clients with two threads in the memtier client, N = 16 and the throughput X is approximately 3800 ops/sec, it gives us a response time of 4.2ms, which perfectly corresponds. This sanity check also works with the resting results of this experiment. 
+For the latency, we clearly see that it is inversely proportionnal to the throughput (we distinguish three different slopes on both graphs). In the phase when the number of virtual clients grows at a constant rate (number of virtual clients getting bigger than 8), the throughput also gets constant. The reason why the throughput doesn't drop but stays at approximately 4000 operations/second even though the latency frows, is because the higher latency is compensated by a higher number of virtual clients to keep the throughput constant. 
+\\As a sanity check, we can evaluate the interactive law. Knowing that the interactive law is : \[ request Time (w) = \frac{number Of Clients (N)}{throughput (X)}\] that for example at 8 virtual clients with two threads in the memtier client, N = 16 and the throughput X is approximately 3800 ops/sec, it gives us a response time of 4.2ms, which perfectly corresponds. This sanity check also works with the resting results of this experiment. 
 \\
-For a write-only workload, we obtain the following results:
+For a write-only workload, we obtain the following results:\footnote{exp2/baseline1/client02inst1\_ratio1:0\_rep3.txt}
 \\
 \begin{minipage}{0.5\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline1/writeOneVMThroughput.png}
@@ -241,7 +240,7 @@ For a write-only workload, we obtain the following results:
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline1/writeOneVMLatency.png}
 \end{minipage}
 \\\\\\
-For this workload, we note that we barely reach a saturated memcached server with 32 virtual clients, even if there is a clear drop in the growth of the throughput at 8 virtual clients. For write-only, the same observations apply as for the read-only workload. 
+For this workload, we note that we barely reach a saturated memcached server with 32 virtual clients, even if there is a clear drop in the growth of the throughput at 8 virtual clients. The observations beeing made for a read-only workload also apply for write-only. 
 \\\\
 However, we note a maximum throughput twice as high for sets than for gets, with a maximum latency twice as small. The different size of the messages being sent back and forth between the clients and the servers may not be the main factor, since for a get the messages are: 
 \begin{lstlisting}
@@ -251,7 +250,7 @@ and for the set they are:
 \begin{lstlisting}
 	request: set memtier-9999  0 10000 1024 XXXXX,	answer:  STORED
 \end{lstlisting}
-which are quite the same length. This implies that memcached is either storing values faster than getting values, either send the \textit{STORED} message back before starting the write operation, either having poorer performance than memtier benchmark when writting big messages to the connection sockets, or a combination of these factors. For this report, we will just keep in mind that the achieved throughput is higher with a write-only workload.
+which are quite the same length. This implies that memcached is either storing values faster than getting values, either sends the \textit{STORED} message back before starting the write operation, either having poorer performance than memtier benchmark when writting big messages to the connection sockets, or a combination of these factors. For this report, we will just keep in mind that the achieved throughput is higher with a write-only workload.
    
 \subsection{Two Servers}
 
@@ -272,7 +271,7 @@ Now we are increasing the number of servers and putting a single client machine 
 \end{center}
 
 \subsubsection{Results and explanation}
-For a read-only workload, we obtain the following plots:
+For a read-only workload, we obtain the following plots:\footnote{exp2/baseline2/client01inst1\_ratio0:1\_rep1.txt and exp2/baseline2/client01inst2\_ratio0:1\_rep1.txt}
 \\
 \begin{minipage}{0.5\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline2/readInst1Throughput.png}
@@ -282,7 +281,7 @@ For a read-only workload, we obtain the following plots:
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline2/readInst2Throughput.png}
 \end{minipage}
 \\\\
-Remember that the client machine has two instances each connected to a different memcached server. It is important to notice at this point that the maximal throughput achieved by the two instances are not equal. As shown on the next figures, this is because the latency is higher for one of the two servers, which may be because of their geographic location (The server located further away from the client machine results in a higher latency).
+Remember that the client machine has two memtier instances each connected to a different memcached server. It is important to notice at this point that the maximal throughput achieved by the two instances are not equal. As shown on the next figures, this is because the latency is higher for one of the two servers, which may be because of their geographic location (The server located further away from the client machine results in a higher latency).
 \begin{minipage}{0.5\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline2/readInst1Latency.png}
 \end{minipage}
@@ -291,7 +290,7 @@ Remember that the client machine has two instances each connected to a different
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline2/readInst2Latency.png}
 \end{minipage}
 \\\\
-For a write-only workload, we obtain for the server with higher throughput similar plots for throughput and latency than for a read-only workload:
+For a write-only workload, we obtain for the server with higher throughput similar plots for throughput and latency than for a read-only workload:\footnote{exp2/baseline2/client01inst2\_ratio1:0\_rep1.txt}
 \\
 \begin{minipage}{0.5\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp2/baseline2/writeInst2Throughput.png}
@@ -303,11 +302,11 @@ For a write-only workload, we obtain for the server with higher throughput simil
 \\
 \\
 We see that the system starts to saturate for the two workloads when reaching 28 virtual clients per thread, with a maximum throughput of around 8000 operations per second for the instance with higher throughput.  
-We also note that contrary to the last experiment with a single server, the throughputs for write and read are similar. This proves for the last experiment that the memcached server saturates under a high workload, but tends to be more scalable for get-only operations. On the other hand, a single client machine cannot produce a higher throughput than 8000 operations per second, for read and for write.   
+We also note that contrary to the last experiment with a single server, the throughputs for write and read operations are similar. This proves for the last experiment that the memcached server saturates under a high read-only workload, but tends to be more scalable for write-only operations, since on the other hand, a single client machine cannot produce a higher throughput than 8000 operations per second, for read and for write.   
 \subsection{Summary}
 
 
-Based on the experiments, we are now able to fill the table with the maximal throughputs for different configurations. To make the results suitable for comparison with the rest of the experiments, we sum up the throughputs observed on the different client machines. For the experiment with a single memtier client, we use the results of both instances to give a lower and upper bound (separated by a "/"). 
+Based on the experiments, we are now able to fill the table with the maximal throughputs for different configurations. To make the results suitable for comparison with the rest of the experiments, we sum up the throughputs observed on the different client machines for a single server. For the experiment with a single memtier client, we use the results of both instances to give a lower and upper bound (separated by a "/").\footnote{We used the same stats as for the last plots}
 
 \begin{center}
 	{Maximum throughput measured on one VM}
@@ -321,15 +320,15 @@ Based on the experiments, we are now able to fill the table with the maximal thr
 As explained in the previous sections, the key take-aways of this experiment are the following:
 
 \begin{itemize}
-\item The achieved throughput by the memtier clients and even instances may vary: because of the geographic positions of the clients or other factors. 
+\item The achieved throughput by the memtier clients may vary because of the geographic positions of the clients or other factors. 
 \item The memcached servers saturate faster for a read-only workload. For a write-only workload, the throughput can be twice as high and is limited by the performance of the memtier clients. 
-\item The numbers of the first line in the table represent the maximum throughput a memcached server can achieve, as the second line represents the maximum workload a memtier client can achieve. 
+\item We were able to find out the performance limitations of bothe a memtier client (line 2 of the table) and a memcached server (line 1). 
 \end{itemize}
 \newpage
 
 \section{Baseline with Middleware}
 
-In this set of experiments we want to take a closer look at the effect of the middleware on the system. For this purpose, we are running experiments with different workloads, a different number of worker threads in the middleware, and one or two middlewares. This will show us in what way the middleware influences the results found during experiment two. 
+In this set of experiments we want to take a closer look at the effect of the middleware on the system. For this purpose, we are running experiments with different workloads, a different number of worker threads in the middleware, and one or two middlewares. This will show us in what way the middleware influences the results found during experiment 2. 
 
 
 \subsection{One Middleware}
@@ -354,7 +353,7 @@ We start the experiment by connecting a single client machine to the middleware 
 
 \subsubsection{Results and explanation}
 
-The throughput and the response time for a read-only workload measured on the middleware give the following plots (the plots for write-only are the same):
+The throughput and the response time for a read-only workload measured on the middleware give the following plots (the results for a write-only workload are similar):\footnote{files from exp3/normal, repetition 1, ratio 0:1}
 
 \begin{center}
 \includegraphics[scale=0.8]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/throughput.png}
@@ -363,7 +362,7 @@ The throughput and the response time for a read-only workload measured on the mi
 \includegraphics[scale=0.8]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/responseTime.png}
 \end{center}
 
-Note that the response time mesured is the addition of the service time and the waiting time in the queue, as showed by the two following plots. 
+Note that the response time mesured is the addition of the service time and the queuing time, as showed by the two following plots. 
 \\
 \begin{minipage}{0.5\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/serviceTime.png}
@@ -373,11 +372,11 @@ Note that the response time mesured is the addition of the service time and the 
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/timeInQueue.png}
 \end{minipage}
 \\
-The service time of the middleware is extremely close to the time it takes to send and receive an answer from the memcached server (the difference can be neglected). Since the parsing times are very small compared to the answer time of memcached, the answer time and the service time are nearly equal. 
+By taking a close look at the statistics\footnote{any file in experience 3 can be considered for this point}, we observe that the service time is essentially the time waiting for an answer from the mmecached server. Since the service time is defined as \(serviceTime = parsingTime + waitingForMemcached\), and that we see that the parsing time is very small, the service time is essentially the time waiting for an answer. 
 \\
-The interactive law is also respected for the configurations where the maximum throughput is achieved. If we take for example 16 middleware worker threads and 32 virtual clients, we obtain N = 64, X = 6000, and thus w = 10 ms, which is not far from what we ploted (in reality, as we will see later, the time spent in the middleware, known as "think time" has also to be taken into account). 
+The interactive law is also respected: if we take for example 16 middleware worker threads and 32 virtual clients, we obtain \(N = 64, X = 6000, and thus w = 10 ms\), which is not far from what we plotted (in reality, as we will see later, the time spent in the middleware, known as "think time" has also to be taken into account). 
 \\
-From the four of these plots, we see that the middleware is the bottleneck for a configuration with 8 and 16 middleware worker threads, since the throughput stays constant after respectively 8 and 16 virtual client and, as seen in the last experiment, the maximum throughput that can be achieved by memtier is higher than the throughputs achieved here. More precisely, the bottleneck in the middleware is the time a request spends in the queue, as shown by the strongly growing curve of the average time in queue for 8 worker threads for example. This strong growth is also correlated to the average queue length: as shown in the next figure, the queue length is growing with the time a request spends in queue, since the middleware has not enough threads available to execute the requests. 
+From the four of these previous plots, we see that the middleware is the bottleneck for a configuration with 8 and 16 middleware worker threads, since the throughput stays constant after respectively 8 and 16 virtual client and, as seen in the last experiment, the maximum throughput that can be achieved by memtier is higher than the throughputs achieved here. More precisely, the bottleneck in the middleware is the time a request spends in the queue, as shown by the strongly increasing curve of the average time in queue for 8 worker threads for example, which can be up to 5 times as big as the service time. This strong growth of the queuing time is also correlated to the average queue length: as shown in the next figure, the queue length is growing with the time a request spends in queue, since the middleware has not enough threads available to execute the requests. 
 \begin{center}
 \includegraphics[scale=0.5]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsMW/ratio0:1/rep1/queueLength.png}
 \end{center}
@@ -391,20 +390,20 @@ As a sanity check, we also plot the latency and the throughput observed on the c
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/normal/statsClient/ratio0:1/rep1/latency.png}
 \end{minipage}
 \\
-There are two interesting points to notice: first, the throughput measured on the middleware is equal to the one measured on the memtier VM, which is due to the way memtier works. As explained in section 1, one memtier CPM doesn't send a new request until the last one has not been received. Secondly, the graph of the latency is similar as the one for the response time on the middleware, but shifted by 2ms on the y-axis, which is due to the travelling time between the middleware and the memtier client. 
+There are two interesting points to notice: first, the throughput measured on the middleware is equal to the one measured on the memtier VM, which is due to the way memtier works. As explained in section 1, one memtier CPM doesn't send a new request until the last one has not been received. Secondly, the graph of the latency is similar in shape as the one for the response time on the middleware, but shifted by 2ms on the y-axis, which is due to the travelling time between the middleware and the memtier client. 
 \\
 \\
-As a last point, because we haven't reached a saturated middleware with 32 and 64 worker threads, we re-run the experiment with an increased number of generating client VM number (2), to obtain the following results:
+As a last point, because we haven't reached a saturated middleware with 32 and 64 worker threads, we re-run the experiment with an increased number of generating client VM (2), to obtain the following results for a read-only or write-only workload:\footnote{files from exp3/part1/bs, repetition 1, ratio 0:1}
 \\
-\begin{minipage}{0.5\linewidth}
+\begin{minipage}{0.48\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs/statsMWBottSearch/throughput.png}
 \end{minipage}
 \hfill
-\begin{minipage}{0.5\linewidth}
+\begin{minipage}{0.48\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part1/bs/statsMWBottSearch/timeInQueue.png}
 \end{minipage}
-\\
-We note that by increasing the workload, we are able to saturate the middleware with 32 worker threads, again, due to a slope change in the queuing time. For 64 worker threads, we are tending to reach a saturated state at around 11000 operations per second, which also corresponds to the maximum throughput a memcached server can achieve with a read-only workload. To make sure that the middleware becomes the bottleneck under high workload even with 64 worker threads, we have run all this experiment with a write-only workload also, and obtain for every configuration and every statistics the same plots. Seen that the maximum throughput of the memcached server under a write-only workload was around 20000 ops/second, we can conclude that the middleware will start to become the bottleneck under any configuration if the throughput is high enough. 
+\\\\
+We note that by increasing the workload, we are able to saturate the middleware with 32 worker threads, again, due to a slope change in the queuing time. For 64 worker threads, we are tending to reach a saturated state at around 11000 operations per second, which also corresponds to the maximum throughput a memcached server can achieve with a read-only workload. To make sure that it is the middleware that becomes the bottleneck under high workload even with 64 worker threads, we have run all this experiment with a write-only workload also, and obtained for every configuration and every statistics the same plots. Seen that the maximum throughput of the memcached server under a write-only workload was around 20000 ops/second, we can conclude that the middleware will start to become the bottleneck under any configuration if the throughput is high enough. 
    
 \subsection{Two Middlewares}
 
@@ -427,13 +426,13 @@ We continue the experiment by connecting one client VM with two instances of mem
 \end{center}
 \subsubsection{Results and explanation}
 
-We obtain the following plots for the throughput and response time measured on one middleware with similar plots for read-only and write-only workloads:
+We obtain the following plots for the throughput and response time measured on one middleware with similar plots for read-only and write-only workloads:\footnote{files from exp3/part2/normal, repetition 1, ratio 0:1}
 \\
-\begin{minipage}{0.48\linewidth}
+\begin{minipage}{0.42\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/normal/mw1/throughput.png}
 \end{minipage}
 \hfill
-\begin{minipage}{0.48\linewidth}
+\begin{minipage}{0.42\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/normal/mw1/responseTime.png}
 \end{minipage}
 \\
@@ -447,10 +446,10 @@ We directly notice that the difference of throughput and reponse time between di
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/normal/mw1/timeInQueue.png}
 \end{minipage}
 \\\\ 
-We should also take into consideration that the workload exerced on one middleware is halved compared to the last experiment , where there was only one thread per memtier instance and not two, which explains why the average time in queue for 8 worker threads only starts to grow faster after 16 virtual clients as opposed to 8. Furthermore, the throughput at saturation for 8 middleware threads is equal to the last experiment. 
+We should also take into consideration that the workload exerced on one middleware is halved compared to the last experiment , where there was only one thread per memtier instance and not two, which explains why the average time in queue for 8 worker threads only starts to grow faster after 16 virtual clients as opposed to 8 virtual clients. Furthermore, the throughput at saturation for 8 middleware threads is equal to the last experiment. 
 Deducing from the previous experiment where we learnt that the bottleneck in the middleware is the queuing time, and the graphs above, the middleware hasn't reached its maximal throughput for the other configurations. 
 \\\\
-However, when we double the load on the middlewares, we can see that our middleware isn't the bottleneck of the experiment if we put a high number of worker thread, but the memcached server. If we remember the conclusions from the baseline without middleware, the read-only achieves a smaller maximal throughput than the write-only, and that's why we can suddenly see a big difference in terms of throughput between the two workloads, since we showed during the last experiment that the middleware achieves the same performance for the two workloads when it is the bottleneck. This is shown by the following two graphs, the left one being a read-only workload and the right one a write-only workload (rep 2 mw1 used).   
+However, when we double the load on the middlewares, we can see that our middleware isn't the bottleneck of the experiment if we put a high number of worker thread, but the memcached server. To prove this claim, we remember from the conclusions of Section 2 that the memcached server achieves a higher throughput with a write-only workload than a read-only. However, as shown in the last experiment, the throughput achieved through a middleware with the two workloads is equal, given the middleware is the bottleneck. The two following plots show that even if the throughputs start to flatten outm the two workloads lead to a \underline{different} throughput\footnote{files from exp3/part2/bs/mw1, repetition 2, ratio 0:1 and 1:0}   
 \\
 \begin{minipage}{0.5\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/bs/statsMW01BottleneckSearch/ratio0/throughput.png}
@@ -460,21 +459,21 @@ However, when we double the load on the middlewares, we can see that our middlew
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp3/part2/bs/statsMW01BottleneckSearch/ratio1/throughput.png}
 \end{minipage}
 \\\\
-To confirm our claim, the calculation of the total throughput of the two middlewares on the single memcached server for a read and write only are (the two middlewares don't have the same throughput, but their statistics have exactly the same shape):
+To confirm our claim further, the calculation of the total throughput through the two middlewares on a single memcached server for a read and write only are:
 \\\textit{read : 4173+7043 = 11216 operations/second}
 \\\textit{write : 5452+10753 = 16205 operations/second}
 \\
-Hence, because the maximum throughput of a single memcached server for read-only workload was 11289, and 23836 for write-only, this proves that the memcached server is the bottleneck for this further experiment. This is, we can reach the memcached server upper-bound with a configuration with 64 worker thread and 2 connected middlewares. 
+Hence, because the maximum throughput of a single memcached server for read-only workload was 11289, and 23836 for write-only, this proves that the memcached server is the bottleneck for this further experiment for a read-only workload. This is, we can reach the memcached server upper-bound with a configuration with 64 worker thread and 2 connected middlewares for read-only. 
 
 
 
 \subsection{Summary}
-The maximum throughputs for different configurations are summarized in the following table. The throughputs are beeing added over all the VM as well for the middlewares than the clients. 
+The maximum throughputs for different configurations are summarized in the following table. The throughputs are beeing added over all the VM as well for the middlewares than the clients.\footnote{files from exp3, part 1 or 2, bs: all with 64 mwt, repetition1} 
 
 \begin{center}
 	{Maximum throughput for one middleware.}
 	\begin{tabular}{|l|p{2cm}|p{2cm}|p{2cm}|p{2cm}|}
-		\hline                                & Throughput & Response time[ms] & Average time in queue[ms] & Miss rate \\ 
+		\hline                                & Throughput& Response time[ms] & Average time in queue[ms] & Miss rate \\ 
 		\hline Reads: Measured on middleware  &10638           &6.69              &2.07                       &14\%           \\ 
 		\hline Reads: Measured on clients     &10266            &12.25               &-                  &14\%           \\ 
 		\hline Writes: Measured on middleware &10477            &7.17               &2.13                       &-      \\ 
@@ -500,7 +499,7 @@ As explained in the previous sections, the key take-aways for this experiment ar
 
 \begin{itemize}
 \item The bottleneck of the middleware is the queuing time of the requests. When the number of worker threads is too low, this value tends to grow very fast.  
-\item The same observation applies for a configuration with two middlewares. If the performance of the memcached servers and memtier benchmark clients were infinitely good, we would expect a performance twice as high than for one middleware, since they are running independently. But this is not the case and could show that we can achieve the upper-bound of the memcached server with two middlewares. 
+\item The same observation applies for a configuration with two middlewares. If the performance of the memcached servers and memtier benchmark clients were infinitely good, we would expect a performance twice as high than for one middleware, since they are running independently. But this is not the case and could show that we can achieve the upper-bound of the memcached server with two middlewares and a read-only workload. 
 \end{itemize}
 \newpage
 
@@ -528,16 +527,16 @@ The purpose of this section is to assess the behaviour of the middleware with a 
 
 \subsubsection{Results and explanation}
 
-The statistics of a single middleware have as expected the same shape than during last experiment, and are nearly equal between two middlewares. Hence, we plot here the total throughput of the two middlewares and the other statistics from one single middleware. 
+The statistics of a single middleware have as expected the same shape than during last experiment, and are nearly equal between two middlewares. Hence, we plot here the total throughput of the two middlewares and the other statistics from one single middleware.\footnote{files from exp4, mw1 and 2, repetition 2} 
 
 \begin{center}
-\includegraphics[scale=0.6]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp4/totalThroughputM1and2/totalThroughput.png}
+\includegraphics[scale=0.57]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp4/totalThroughputM1and2/totalThroughput.png}
 \end{center}
  \begin{center}
-\includegraphics[scale=0.6]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp4/statsMW1/responseTime.png}
+\includegraphics[scale=0.57]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp4/statsMW1/responseTime.png}
 \end{center}
 
-The interactive law also holds for this case. If we take for example 32 worker threads at 16 virtual clients, we get N = 16*6 (since there are 3 clients putting workloads on these two middleware), X = 10000, we get w = 0.0096 = 9.6 ms, which is approximately correct. 
+The interactive law also holds for this case. If we take for example 32 worker threads at 16 virtual clients, we get N = 16 $\cdot$ 6 (since there are 3 clients putting workloads on these two middleware), X = 10000, we get w = 0.0096 = 9.6 ms, which is approximately correct when we compare it with the graph. 
 We further notice that the latency takes much higher values than during the last experiment, which is due to an increased workload from more clients. 
 \\
 We now want to get an insight on the service time compared to the queuing time.
@@ -558,11 +557,11 @@ At last, we have a look at the average queue length in the middleware:
 \includegraphics[scale=0.5]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp4/statsMW1/queueLength.png}
 \end{center}
 As said in the previous experiment, the average queue length follows the shape of the queuing time. A small calulation allows us to explain these numbers. 
-If we consider our middleware with \textit{m} number of worker threads, an average queue length of \textit{L}, the service time being {s}, and the waiting time in queue beeing \textit{T}, we can verify that: 
+If we consider our middleware with \textit{m} number of worker threads, an average queue length of \textit{L}, the service time being \textit{s}, and the waiting time in queue beeing \textit{T}, we can verify that: 
 \[ T = \frac{L}{m}\cdot s \]
-which is just the number of requests awaiting for a given worker thread times the average service time of one worker thread. For example, if we take m = 16 and the number of virtual clients 32, we have L = 65, s = 4ms, and thus we obtain T = 16.25ms, which corresponds to what we measured. 
+which is just the number of requests awaiting for a given worker thread times the average service time of one worker thread. For example, if we take m = 16 and the number of virtual clients 32, we have L = 65, s = 4ms, and thus we obtain T = 16.25ms, which corresponds to what we measured (when looking at the graph)
 \subsection{Summary}
-To fill in the summary table, we do the total throughput of the middlewares, and take one representative statistics for the rest. For the throughput derived from the MW response time we use the interactive law as showed at the start of this section. 
+To fill in the summary table, we calculate the total throughput of the middlewares, and take one representative statistics for the rest. For the throughput derived from the MW response time we use the interactive law as showed at the start of this section.\footnote{We use all the files, repetition 2} 
 \begin{center}
 	{Maximum throughput for the full system}
 	\begin{tabular}{|l|p{1.5cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|}
@@ -589,7 +588,7 @@ The key take-aways for this experiment are the following:
 In this set of experiments we will have a closer look at the behaviour of the system with get and multi-get requests. First, the sharded case, where the middleware splits the requests among the servers, and secondly the non-sharded case, where the request is handled as a normal get. 
 
 \subsection{Sharded Case}
-The memtier workload is adapted so that memtier sends one set alternated with one multi get of the key-size we want. Also, we use 64 middleware threads to achieve maximum throughput. 
+The memtier workload is adapted so that memtier sends one set request alternated with one multi get request of the key-size we want. Also, we use 64 middleware threads to achieve maximum throughput. 
 
 \begin{center}
 	\scriptsize{
@@ -610,7 +609,7 @@ The memtier workload is adapted so that memtier sends one set alternated with on
 \end{center}
 
 \subsubsection{Results and explanations}
-First, we analyze a couple of statistics on the middleware to understand its behaviour. The throughput and the service time in the middleware are plotted:
+First, we analyze a couple of statistics on the middleware to understand its behaviour. The throughput and the service time on one middleware are plotted:\footnote{files from exp5, mw1, repetition1 (through the whole part)}
 \\
 \begin{minipage}{0.5\linewidth}
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW1//shardedtrue/serviceTime.png}
@@ -630,7 +629,7 @@ We observe that the service time increases with the key size, which is normal si
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsMW1//shardedtrue/timesInMGetMem.png}
 \end{minipage}
 \\\\
-Two comments have to be made regarding these graphs: first, we see that there is no statistic for a key size of 1, this is because a multi get with size one is handled as a get in the middleware and thus isn't part of the multi get statistics. Secondly, we observe that the time spent in the multi get handling is equivalent to the service time. This is because the parsing time of a request is still very small even if the size of the message grows.
+Two comments have to be made regarding these graphs: first, we see that there is no statistic for a key size of 1, which is because a multi get with size one is handled as a get in the middleware and thus isn't part of the multi get statistics. Secondly, we observe that the time spent in the multi get handling is equivalent to the service time. This is because the parsing time of a request is still very small even if the size of the message grows.
 \\
 In the previous sections, we discovered that the time spent in the queue was the bottleneck of our system. However, in a multi get configuration, this isn't the case any more as shown by the following figure, which plots the time spent in queue:  
  \begin{center}
@@ -638,7 +637,7 @@ In the previous sections, we discovered that the time spent in the queue was the
 \end{center}
 
 
-On the client side, a closer look is taken to the latency distribution of the requests. The plotted line represents the average latency. The colors represent the percentage of the requests that are in a certain latency range. Thus, the top ends of the color bars represent respectively the 25th, 50th, 75th, 90th and 99th percentiles. 
+On the client side, a closer look is taken to the latency distribution of the requests. The plotted line represents the average latency. The colors represent the percentage of the requests that are in a certain latency range. Thus, the top ends of the color bars represent respectively the 25th, 50th, 75th, 90th and 99th percentiles.\footnote{files exp5, client1, repetition 1} 
   
  \begin{center}
 \includegraphics[scale=0.7]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp5/statsClient1//shardedTrue/latency.png}
@@ -706,12 +705,12 @@ The distribution of the latency as measured on the middleware and the client, fo
 
 \subsection{Summary}
 
-All the histograms seem to follow a gaussian distribution around a shifted mean. First, we notice that measured on the client is slightly higher than the one measured on the middleware, due to the travelling time between the middleware and the client. Secondly, more interesting, the latency is on average higher in the sharded case than in the non sharded case. 
+All the histograms seem to follow a gaussian distribution around a shifted mean. First, we notice that the measured response time on the client is slightly higher than the one measured on the middleware, due to the travelling time between the middleware and the client. Secondly, more interesting, the latency is on average higher in the sharded case than in the non sharded case. 
 \\
-This can be explained by the followings: 
+This can be explained by the following points: 
 \begin{itemize}
-\item The server performance is similar if it receives 2 keys in the get requests (in the sharded case with 3 servers) or 6 keys. This claim can be proved by looking at the graph in section 5.2, where we see that the difference of time spent in the multi get handling between 3 and 6 keys , i.e the waiting time for the memcached server, is very small. Hence, reducing the key size from 6 to 2 isn't enough to observe a significant difference in latency. 
-With a multi get key size of 9, the difference wouldn't have been significant either, by refering to the same graph again, since the request would have been split in sizes of 3. A major difference could have been observed if we had a key size of n which overwhelms the server, whereas a size of n/3 doesn't. However, n=9 isn't enough to overwhelm the server, even with a very low miss ratio (1\%)
+\item The server performance is similar if it receives 2 keys in the get requests (in the sharded case with 3 servers) or 6 keys. This claim can be proved by looking at the graph in section 5.2, where we see that the difference of time spent in the multi get handling between 3 and 6 keys , i.e the difference of waiting time for the memcached server, is very small. Hence, reducing the key size from 6 to 2 isn't enough to observe a significant difference in latency. 
+With a multi get key size of 9, the difference wouldn't have been significant either, by refering to the same graph, since the request would have been split in sizes of 3. A major difference could have been observed if we had a key size of n which overwhelms the server, whereas a size of n/3 doesn't. However, n=9 isn't enough to overwhelm the server, even with a very low miss ratio (1\%)
 \item The way the middleware handles a multi-get request in the sharded mode isn't optimal. The pattern followed by the multi get handling is the same as the one for a set request, namely: 
 \begin{lstlisting}
 	1				prepare the splitted requests
@@ -723,7 +722,7 @@ With a multi get key size of 9, the difference wouldn't have been significant ei
 	7				wait for answer 3 until received
 	8				merge the answers and send back to client
 \end{lstlisting}
-Like we discussed in the previous section, the point 1 is extremely efficient and can be neglected. However, waiting sequentially for an answer from a server can be bad if the response times are different as explained for set request. 
+Like we discussed in Section 1, the point 1 is extremely efficient and can be neglected. However, waiting sequentially for an answer from a server can be bad if the response times are different as explained for set request. 
 \end{itemize}  
 
 \newpage
@@ -734,14 +733,14 @@ The following configuration are beeing experimented:
 \begin{center}
 	\scriptsize{
 		\begin{tabular}{|l|c|}
-			\hline Number of servers                & 2 and 3                                     \\ 
+			\hline Number of servers                & \textbf{2 and 3}                                     \\ 
 			\hline Number of client machines        & 3                                           \\ 
 			\hline Instances of memtier per machine & 2                                           \\ 
 			\hline Threads per memtier instance     & 1                                           \\
 			\hline Virtual clients per thread       & 32                                     \\ 
 			\hline Workload                         & Write-only, Read-only, and 50-50-read-write \\
-			\hline Number of middlewares            & 1 and 2                                     \\
-			\hline Worker threads per middleware    & 8 and 32                                    \\
+			\hline Number of middlewares            & \textbf{1 and 2}                                     \\
+			\hline Worker threads per middleware    & \textbf{8 and 32}                                    \\
 			\hline 
 		\end{tabular}
 	} 
@@ -751,13 +750,14 @@ The full calculations for this 2\textsuperscript{3}*3 analysis can be found in t
 \begin{center} 
 \includegraphics[width=\linewidth]{/home/simon/Documents/ETH/asl/asl-fall17-project/collectedStatFiles/Exp6/tro.png}
 \end{center}
-The obtained results are as expected, not a surprise. 
+The obtained results are as expected, not a surprise, and only confirm what we concluded from the last experiments.
 \\
 For the throughput, the contribution of the variation of the number of servers is very low. As it could be seen during the last experiments, the time spent in queue in the middleware has always been the bottleneck of our system when using a single get workload. In addition, as observed in experiment 5, using more servers doesn't improve the total time waiting for the memcached server(s), and thus, changing the number of servers only explains few variation. 
 \\
-The explained variation is basically shared between the the single contribution of the increase of the number of middlewares, and the single contribution of the increase of the numer of worker threads. This point has also been highlighted in the previous experiments: The throughput increases drastically with the number of worker threads, and increases up to a certain point with two middlewares because of the memcached server capacity and that's why the variation explained by the middleware is twice as high than the variation explained by the number of worker threads. This is the last proof that the times in queue is the biggest bottleneck in our system, and that changing its value influences a lot on the throughput. 
+The explained variation is basically shared between the single contribution of the increase of the number of middlewares, and the single contribution of the increase of the numer of worker threads. This point has also been highlighted in the previous experiments: the throughput increases drastically with the number of worker threads, and increases up to a certain point with two middlewares because of the memcached server capacity. That's why the variation explained by number of worker threads is twice as high than the variation explained by the number of middlewares. This is the last proof that the times in queue is the biggest bottleneck in our system, and that changing its value influences a lot on the throughput. 
 \\We finally note that the different factors of this experiment are quite independent since their combined values are very low. 
 \newpage
+
 For the response time, the 2k analysis leads to the following results:
 \\
 \begin{center} 
@@ -765,8 +765,8 @@ For the response time, the 2k analysis leads to the following results:
 \end{center} 
 For the response time, we note that the contributions are all negative. This is, because of the fact that if we increase a factor (for example from 8 worker threads to 32), we decrease the response time. 
 \\
-For the reponse time, only the variation of the number of middleware threads has an influence on the response time. The number of servers has (nearly) no influence on the response time, for the same reason that it didn't have for the throughput. On the other hand, the number of middleware has also no influence on the response time, because the response time on two middlewares are independent of each other as long as the memcached servers (which are the same for the two middlewares) are not saturated, which is not the case as we can observe in this table. In the case where the servers would be oversaturated, we would have a positive contribution for qM. 
-Finally, the number of worker threads is again the main contributor to the variation of response time. For the same reasons as for the troughput, a higher number of worker threads leads to a lower queuing time and thus a faster response time. 
+For the reponse time, only the variation of the number of middleware threads has a significant influence on the response time. The number of servers has (nearly) no influence on the response time, for the same reason that it didn't have for the throughput. On the other hand, the number of middleware has also no influence on the response time, because the response time on two middlewares are independent of each other as long as the memcached servers (which are the same for the two middlewares) are not saturated, which is not the case as we can observe in this table. In the case where the servers would be oversaturated, we would have a positive contribution for qM. 
+\\Finally, the number of worker threads is again the main contributor to the variation of the response time. For the same reasons as for the troughput, a higher number of worker threads leads to a lower queuing time and thus a faster response time. 
 \\\\
 The response time and the throughput tables for the other workloads are very similar and are not treated in this report (but can be found in the \textit{SummaryStats.ods} file), since the same comments apply to them. 
 \newpage
@@ -778,12 +778,12 @@ So far, statistics have been collected, plotted and analyzed. We now want to mod
 To model our system as a M/M/1 model, the statistics collected from experiment 4 are used. 
 The M/M/1 model is a basic modelling system that models one queue with exponentially distributed  service times and arrival rate (the two "M"), and one "server". In our case, this means that the M/M/1 model represents a system where the requests arrive on one unique queue and are being processed by a "single-processor" system, i.e one unique thread that takes and processes the requests from the queue.
 \\
-To be able to model our system as a M/M/1 model, we need to tweak the results somehow to make it appropriate to be used to calculate the statistics. In our middleware, we computed the mean service time that a worker thread takes to process a request, which is (as can be seen in the stat files) representative of the service time of a single worker thread. Assuming that this mean service time is the service time of the "single-processor" is incorrect: it leads to assume that one request is being handled during the average service time of a worker thread. In fact, if the number of worker threads on the middleware is \textit{mwt}, approximately {mwt} requests are being handled during this time-lapse, since they are run in parallel! (since we are able to assume that context switching and other artifacts can be neglected). In consequence, the service time that we are using to calculate these statistics is: 
+To be able to model our system as a M/M/1 model, we need to tweak the results somehow to make it appropriate to be used to calculate the statistics. In our middleware, we computed the mean service time that a worker thread takes to process a request, which is (as can be seen in any stat files, by comparing the individual service time per thread and the mean service time) representative of the service time of a single worker thread. Assuming that this mean service time is the service time of the "single-processor" is incorrect: it leads to assume that one request is being handled during the average service time of a worker thread. In fact, if the number of worker threads on the middleware is \textit{mwt}, approximately \textit{mwt} requests are being handled during this time-lapse, since they are run in parallel! (since we are able to assume that context switching and other artifacts can be neglected). In consequence, the service time that we are using to calculate these statistics is: 
 \[\frac{service time}{mwt}\]
 \\
-The queuing model M/M/1 computes the traffic intensity, which is the ratio between the arrival rate and the service rate. If this ratio is smaller than 1, the system is said to be "stable", otherwise it is "unstable". In our case, having a ratio bigger than 1 means that the middleware is saturated, i.e too many requests are coming in that can be processed, and a ratio of 1 is beeing obtained, when the throughput starts to flatten out. As we discussed in the \textit{System overview} section, a ratio bigger than 1 is nearly impossible to achieve because memtier won't send more requests than what it receives back. However, small errors linked to statistics gathering can lead to having a ratio slightly over 1, even if it should be a little bit less than 1 in reality. For this reason, we will not be able to analyze the system when the ratio is getting close to 1, as the system will be described as "unstable".
+To build a M/M/1 queuing model, the traffic intensity is beeing computed, which is the ratio between the arrival rate and the service rate. If this ratio is smaller than 1, the system is said to be "stable", otherwise it is "unstable". In our case, having a ratio bigger than 1 means that the middleware is saturated, i.e too many requests are coming in that can be processed, and a ratio of 1 is beeing obtained, when the throughput starts to flatten out. As we discussed in the \textit{System overview} section, a ratio bigger than 1 is nearly impossible to achieve because memtier won't send more requests than what it receives back. However, small errors linked to statistics gathering can lead to having a ratio slightly over 1, even if it should be a little bit less than 1 in reality. For this reason, we will not be able to analyze the system when the ratio is getting close to 1, as the system will be described as "unstable".
 \\\\
-We start by computing the different statistics for a middleware configuration with 8 threads for 2 virtual clients, which gives an arrival rate of 1568 requests/sec and a service time of 2813709ns per thread. As discussed previously, we use 2813709/8 = 351713ns as an input for the service time. The output from these calulations are found on the first line, the statistics collected from the middleware on the second line:\footnote{P0: probability of having 0 jobs in the system\\P1/P2: probability of having 1 respecitvely two jobs in the system}: 
+We start by computing the different statistics for a middleware configuration with 8 threads for 2 virtual clients\footnote{files from exp4, mw1, repetition 1, throughout the section} , which gives an arrival rate of 1568 requests/sec and a service time of 2813709ns per thread. As discussed previously, we use 2813709/8 = 351713ns as an input for the service time. The output from these calulations are found on the first line, the statistics collected from the middleware on the second line:\footnote{P0: probability of having 0 jobs in the system\\P1/P2: probability of having 1 respecitvely two jobs in the system}: 
 \begin{center}
 
 		\begin{tabular}{|c|c|c|c|c|c|}
@@ -796,8 +796,7 @@ We start by computing the different statistics for a middleware configuration wi
 		\end{tabular}
  
 \end{center}
-\newpage
- When comparing to the statistics\footnote{from the exp4 folder, mw01, thread8, rep3 file}, we see that the number of jobs in the system and number of jobs in the queue correspond! For the number of jobs in the system, since we modelled the system as an M/M/1 model, with the service time being serviceTime/mwt, the number of jobs in the system will be 1.22*mwt in reality, which is what we have in this configuration. 
+When comparing to the statistics, we see that the number of jobs in the system and number of jobs in the queue correspond. For the number of jobs in the system, since we modelled the system as an M/M/1 model, with the service time being serviceTime/mwt, the number of jobs in the system will be 1.22$\cdot$\textit{mwt} in reality, which is what we have in this configuration. 
  \\
 However, the time spent in the queue doesn't correspond at all to what we measured on our middleware. This is because our system can simply not be modelled correctly with a M/M/1 model: In this model, it is assumed that a "single server", i.e a single thread is handling the incoming requests. Assuming that mwt requests are being handled in a time period T (multiple threads) is the same as one request is being handled in T/mwt time (single thread) is not enough to model our system as an M/M/1. This is because multiple threads take requests from the queue in a round-robin fashion, whereas the single thread model takes one request at a time, executes it completely before taking another request. 
 
@@ -823,7 +822,7 @@ First of all, the same comment about the stability of the system applies to the 
 \end{center}
 The probability distribution of the number of jobs in the system is plotted on the following chart: 
 \begin{center} 
-\includegraphics[scale=0.65]{/home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp7/nJobsInSystem1.png}
+\includegraphics[scale=0.57]{/home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp7/nJobsInSystem1.png}
 \end{center} 
 For the M/M/m model, the response time and the queuing time are predicted right, with a very small queuing time and a response time. The mean number of jobs in the queue also corresponds to the gathered statistics. However, it seems with the chart that the system is underused, with a probability of only 5-6\% that all the worker threads are in use. We want to verifiy this claim by taking a higher arrival rate with the same configuration, i.e 4 virtual clients, which gives an arrival rate of 2513 requests/second and a service time of 3036419ns. 
 This leads to the following values:
@@ -843,7 +842,7 @@ This leads to the following values:
 \includegraphics[scale=0.7]{/home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp7/nJobsInSystem2.png}
 \end{center} 
 The system is now clearly used at its full rate, but the calculated statistics don't correspond as much to what we could observe in the middleware.
-\\However, the model is able to predict that close to this arrival rate, the time in queue and the number of jobs in queue grows bigger and becomes the bottleneck of the system. In fact, when looking at the collected statistics for a one step higher workload, we see that the number of jobs in the queue has been measured to be 12.27, and the queuing time to be 5.27 msec. The reason why this model is only able to predict a given trend \underline{around} this workload is because the calculations become very volatile around a ratio of 1, and thus the numbers inputed in the model need to be very accurate which is note the case in our middleware. 
+\\However, the model is able to predict that close to this arrival rate, the time in queue and the number of jobs in queue grows bigger and becomes the bottleneck of the system. In fact, when looking at the collected statistics for a one step higher workload (8 VC), we see that the number of jobs in the queue has been measured to be 12.27, and the queuing time to be 5.27 msec, which would correspond to the above stats. The reason why this model is only able to predict a given trend \underline{around} this workload is because the calculations become very volatile around a ratio of 1, and thus the numbers inputed in the model need to be very accurate which is note the case in our middleware. 
 \\
 For example, the inputed number for the service time and the arrival rate for 4 virtual clients were respectively 3036419ns and 2513 requests/second, whereas the numbers for 8 virtual clients are 3080518ns and 2605 requests/second, which we can see are very close to each other. However, the second configuration leads to a slightly unstable system (ratio = 1.002), and the first configuration a slightly stable configuration (ratio = 0.97). Knowing that the inputs for the two configurations are very similar, and that an error has to be taken into account in the measurements, it is reasonable to compare the outputed calculations of the 1st configuration with the collected statistics for the 2nd configuration:
  \begin{center}
@@ -862,14 +861,14 @@ Now we are able to see that the calculated outputs correspond very well to the c
 To conclude this part, we see that the M/M/m model is a much more suitable model for our middleware system than the M/M/1 model. When using the M/M/m model in a clearly underused configuration, the calculations are very close to the observed statistics. However, the M/M/m model outputs become very volatile when the traffic intensity (the ratio) grows close to 1, and thus, very precise statistics need to be inputed in the model to get corresponding statistics. This is not possible with our collected statistics, however it is possible to predict trends around a certain workload as seen previously. When being in a saturated configuration, the ratio grows systematically slightly over 1 due to some imprecisions and the model is not able to predict the correct values anymore. \footnote{More configurations have been tested here and lead to the same conclusion. To test more configurations, just choose a stable workload, and run the script \textit{mmm} found in the Scripts folder of experience 7, by putting the arrival rate, service time and number of worker threads to the good values}.  
 
 \subsection{Network of Queues}
-For this last part we are modelling our system with a network of queue and trying to see the how some operationnal laws apply to it. We model our network of queue in the following way:
+For this last part we are modelling our system with a network of queue and trying to see how some operationnal laws apply to it. We model our network of queue in the following way:
 \begin{center} 
 \includegraphics[scale=0.65]{/home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp7/conf1.PNG}
 \end{center} 
 The request queue and the worker threads are being modelled as an M/M/m queue, whereas the queues at the different servers are M/M/1. As we discussed in the last section, an M/M/m model is the most accurate way to design the first part of the system. Since all the memcached servers are independent, one M/M/1 queue per server is what makes the most sense. 
 \\
 In our system, this network of queue will only confirm the informations gathered about the system through this report: every request goes into the same queue, and is treated by the same pool of worker threads. As discussed in the \textit{System Overview} part, using a java \textit{ThreadPoolExecutor} will use the worker threads equally as soon as they are free. Moreover, when looking at the service time for the different threads\footnote{see any file from experiment 3}, we observe that they are all extremely close, which is not a surprise since every thread has to execute the exact same request. In consequence, this means that every worker thread is visited the same. 
-The servers are also used all the same amount: Recall that for a set operation, the request is beeing sent to every server, and that for a get request, the get operation are sent to a single server in a round-robin fashion.    
+The servers are also used at the same amount, since for a set operation, the request is being sent to every server, and that for a get request, the get operations are sent to a single server in a round-robin fashion.    
 \\\\
 This design enables us to compare the utilization of the request queue and the different worker threads with the utilization of the servers. We first calculate the different values in a generic way, by adapting the following naming convention :
 \begin{itemize}
@@ -880,7 +879,7 @@ This design enables us to compare the utilization of the request queue and the d
 \item Q [ms]: queuing time
 \item \(\epsilon \): parsing time (which is small)
 \end{itemize}  
-We first compute the the throughput per device by using the following formula for the throughput per device: 
+We start with the throughput per device by using the following formula: 
 \[Xi = X*Vi\]
  \begin{center}
 
@@ -901,12 +900,12 @@ and thus the utilization for weach device, given by:
 			  \hline
 			  \textbf{Device} & \textbf{Throughput} & \textbf{Service time} & \textbf{Utilization} \\
 			  \hline
-			  worker thread i  &X/m  & S+Q  &(X/m)*(S+Q)\\
-			  server j & X/3 & S-epsilon &(X/3)*(S-epsilon)  \\
+			  worker thread i  &X/m  & S+Q  &(X/m)$\cdot$(S+Q)\\
+			  server j & X/3 & S-\(\epsilon \) &(X/3)$\cdot$(S-\(\epsilon \))  \\
 			  \hline
 		\end{tabular}
  \end{center}
-Now we can follow this formula and find the different utilizations per device. We are using the configuration with one middleware and a read-only workload, 32 middleware threads and 2 virtual clients. This values corresponding to this configuration are: 
+Now we can follow this formula and find the different utilizations per device. We are using the configuration with one middleware and a read-only workload, 32 middleware threads and 2 virtual clients. The values corresponding to this configuration are:\footnote{files from exp3, normal, ratio 0:1 or 1:0, mw01, repetition 1} 
 \begin{itemize}
 \item X: 822
 \item m: 32
@@ -914,7 +913,7 @@ Now we can follow this formula and find the different utilizations per device. W
 \item Q: 0.162745
 \item \(\epsilon \): 0.009322
 \end{itemize}
-whcih gives (note that a small conversion is beeing made to have ms both for throughput and times):
+which gives (note that a small conversion is beeing made to have ms both for throughput and times):
   \begin{center}
 		\begin{tabular}{|c|c|c|c|}
 			  \hline
@@ -963,11 +962,12 @@ which is:
 			  \hline
 		\end{tabular}
 \end{center}
+
 In a second part, we are modelling the system a little bit different to isolate the request queue, and verify even more that it is the bottleneck of our system. This is, our system will be as followed:
 \begin{center} 
 \includegraphics[scale=0.65]{/home/simon/Documents/ETH/asl/asl-fall17-project/Scripts/exp7/conf2.PNG}
 \end{center} 
-The request queue is now being modelled separately from the middleware threads as an M/M/1 queue. The servers are each beeing modelled individually with the worker thread currently communicating with this server. This is a reasonable way of modelling our system since as we saw previously, the service time of a middleware thread apart from the waiting time for the server's response is very small. With this modelling, we calculate the following generic results applying the same operationnal laws as before:
+The request queue is now being modelled separately from the middleware threads as an M/M/1 queue. The servers are each being modelled individually with the worker thread currently communicating with this server. This is a reasonable way of modelling our system since as we saw previously, the service time of a middleware thread apart from the waiting time for the server's response is very small. With this modelling, we calculate the following generic results applying the same operationnal laws as before:
  \begin{center}
 		\begin{tabular}{|c|c|c|}
 			  \hline
@@ -985,12 +985,12 @@ The request queue is now being modelled separately from the middleware threads a
 			  \hline
 			  \textbf{Device} & \textbf{Throughput} & \textbf{Service time} & \textbf{Utilization} \\
 			  \hline
-			  request queue  &X  & Q  & Q*X\\
-			  server i & X/3 & S-epsilon &(X/3)*(S-epsilon)  \\
+			  request queue  &X  & Q  & Q$\cdot$X\\
+			  server i & X/3 & S-\(\epsilon \) &(X/3)$\cdot$(S-\(\epsilon \))  \\
 			  \hline
 		\end{tabular}
  \end{center}
- When beeing applied to a high workload, i.e the last configuration used, we obtain the following:
+ When being applied to a high workload, i.e the last configuration used, we obtain the following:
  \begin{itemize}
 \item X: 3169
 \item m: 8
@@ -1014,8 +1014,8 @@ which is:
  \\
  \\
  Finally, we want to have a quick look at a very important operationnal law, namely Little's law. Recall that Little's law is given by: 
- \[Length of queue = arrival rate \cdot response time\]
- This law can be verified in our system , by for example using the configuration used lately, we have:
+ \[Length Of Queue = arrival Rate \cdot response Time\]
+ This law can be verified in our system by using for example the configuration used lately, we then have:
  \begin{itemize}
 \item arrival rate: 3.169 requests/ms
 \item m: 8

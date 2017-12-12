@@ -1,0 +1,29 @@
+\BOOKMARK [1][-]{section.1}{System Overview \(75 pts\)}{}% 1
+\BOOKMARK [1][-]{section.2}{Baseline without Middleware \(75 pts\)}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{One Server}{section.2}% 3
+\BOOKMARK [3][-]{subsubsection.2.1.1}{Explanation}{subsection.2.1}% 4
+\BOOKMARK [2][-]{subsection.2.2}{Two Servers}{section.2}% 5
+\BOOKMARK [3][-]{subsubsection.2.2.1}{Explanation}{subsection.2.2}% 6
+\BOOKMARK [2][-]{subsection.2.3}{Summary}{section.2}% 7
+\BOOKMARK [1][-]{section.3}{Baseline with Middleware \(90 pts\)}{}% 8
+\BOOKMARK [2][-]{subsection.3.1}{One Middleware}{section.3}% 9
+\BOOKMARK [3][-]{subsubsection.3.1.1}{Explanation}{subsection.3.1}% 10
+\BOOKMARK [2][-]{subsection.3.2}{Two Middlewares}{section.3}% 11
+\BOOKMARK [3][-]{subsubsection.3.2.1}{Explanation}{subsection.3.2}% 12
+\BOOKMARK [2][-]{subsection.3.3}{Summary}{section.3}% 13
+\BOOKMARK [1][-]{section.4}{Throughput for Writes \(90 pts\)}{}% 14
+\BOOKMARK [2][-]{subsection.4.1}{Full System}{section.4}% 15
+\BOOKMARK [3][-]{subsubsection.4.1.1}{Explanation}{subsection.4.1}% 16
+\BOOKMARK [2][-]{subsection.4.2}{Summary}{section.4}% 17
+\BOOKMARK [1][-]{section.5}{Gets and Multi-gets \(90 pts\)}{}% 18
+\BOOKMARK [2][-]{subsection.5.1}{Sharded Case}{section.5}% 19
+\BOOKMARK [3][-]{subsubsection.5.1.1}{Explanation}{subsection.5.1}% 20
+\BOOKMARK [2][-]{subsection.5.2}{Non-sharded Case}{section.5}% 21
+\BOOKMARK [3][-]{subsubsection.5.2.1}{Explanation}{subsection.5.2}% 22
+\BOOKMARK [2][-]{subsection.5.3}{Histogram}{section.5}% 23
+\BOOKMARK [2][-]{subsection.5.4}{Summary}{section.5}% 24
+\BOOKMARK [1][-]{section.6}{2K Analysis \(90 pts\)}{}% 25
+\BOOKMARK [1][-]{section.7}{Queuing Model \(90 pts\)}{}% 26
+\BOOKMARK [2][-]{subsection.7.1}{M/M/1}{section.7}% 27
+\BOOKMARK [2][-]{subsection.7.2}{M/M/m}{section.7}% 28
+\BOOKMARK [2][-]{subsection.7.3}{Network of Queues}{section.7}% 29

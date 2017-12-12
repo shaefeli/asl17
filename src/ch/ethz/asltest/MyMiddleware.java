@@ -40,8 +40,8 @@ public class MyMiddleware implements Runnable{
                 try {
                     welcomeSocket.close();
                     //Here we print all statistics
-                    printAllStatistics();
-                    //printAllStatisticsExp5();
+                    //printAllStatistics();
+                    printAllStatisticsExp5();
                 } catch(Exception e){
                     e.printStackTrace();
                     System.err.println("Error while shutting down");

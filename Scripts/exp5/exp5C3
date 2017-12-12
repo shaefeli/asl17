@@ -11,8 +11,8 @@ do
 	do
 		for mg in "${mgetSize[@]}"
 		do	
-			./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=1 --threads=1 --port=6800 --server=52.178.78.94 --protocol=memcache_text --test-time=$testTime --multi-key-get=${mg} >>statFiles/client03inst1_sharded${s}_rep${r}.txt &
-			./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=1 --threads=1 --port=6801 --server=52.178.75.198 --protocol=memcache_text --test-time=$testTime --multi-key-get=${mg} >>statFiles/client03inst2_sharded${s}_rep${r}.txt &
+			./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=1 --threads=1 --port=6800 --server=52.166.111.187 --protocol=memcache_text --test-time=$testTime --multi-key-get=${mg} --ratio=1:${mg} >>statFiles/client03inst1_sharded${s}_rep${r}.txt &
+			./memtier_benchmark --data-size=1024 --expiry-range=9999-10000 --key-maximum=10000 --clients=1 --threads=1 --port=6801 --server=52.166.108.116 --protocol=memcache_text --test-time=$testTime --multi-key-get=${mg} --ratio=1:${mg} >>statFiles/client03inst2_sharded${s}_rep${r}.txt &
 			sleep $((testTime+8)) 
 		done
 	done
