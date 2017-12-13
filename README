@@ -11,9 +11,6 @@ Scripts: scripts used on the virtual machines to start the client/middleware (ex
 
 src: the source code of the project. Please refer to the report for a complete and concise explanation of the implementation of the middleware.
  
-out, .git, .idea: used to implement the project, are not important at this point.
-
-
 
 Some files in the project:
 
