@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by Simon on 06.10.17.
+ * A worker thread
  */
 //One request handler object represents one worker thread
 public class RequestHandler implements Runnable{

@@ -5,6 +5,7 @@ import java.util.List;
 
 /**
  * Created by Simon on 06.10.17.
+ * A parsed request
  */
 public class Request {
 

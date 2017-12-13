@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 /**
  * Created by Simon on 29.09.17.
+ * The net thread
  */
 public class MyMiddleware implements Runnable{
 
@@ -40,8 +41,8 @@ public class MyMiddleware implements Runnable{
                 try {
                     welcomeSocket.close();
                     //Here we print all statistics
-                    //printAllStatistics();
-                    printAllStatisticsExp5();
+                    printAllStatistics();
+                    //printAllStatisticsExp5();
                 } catch(Exception e){
                     e.printStackTrace();
                     System.err.println("Error while shutting down");

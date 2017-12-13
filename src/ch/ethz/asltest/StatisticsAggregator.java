@@ -4,6 +4,7 @@ import java.util.*;
 
 /**
  * Created by Simon on 27.10.17.
+ * Collects the statistics
  */
 public class StatisticsAggregator extends TimerTask {
     public void run() {

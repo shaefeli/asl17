@@ -1,0 +1,37 @@
+#######################
+###General Structure###
+#######################
+
+This projects contains three folders:
+
+
+collectedStatFiles: contains all the data from every experience. 
+
+Scripts: scripts used on the virtual machines to start the client/middleware (exp2-exp6) and to calculate the values for exp7, the scripts used to deploy the scripts and jar on the virtual machines, and the scripts to get the stat files back from the vm. Note that the scripts used for plotting are found in the collectedStatFiles where data had to be plotted.
+
+src: the source code of the project. Please refer to the report for a complete and concise explanation of the implementation of the middleware.
+ 
+out, .git, .idea: used to implement the project, are not important at this point.
+
+
+
+Some files in the project:
+
+build.xml: build file for ant
+report.tex: tex file to write the report
+report.pdf: the report
+baseIm.png: used for the report. 
+
+
+#######################
+###Naming convention###
+#######################
+
+-For experience 2-4, a different number of virtual clients had to be tested. Thus, one file 6 statistics, 1 for each number of VC (1,2,4,8,16,32). Every file is a different configuration. The title of the file indicates the configuration and the reptition: for example the file "mw01_thread8_ratio0_rep1.txt", is the file for middleware 1, a 0:1 ratio, 8 worker threads, and repetition 1. It will contain a serie of 6 statistics for each field.
+-For experience 5, the different statistics contained in a single file are for each different multi get size. 
+-For experience 6, we have 4 different folders where we varied the number of servers and middlewares. For example, the folder 2s1m is the folder with 2 servers and 1 middleware. Every statistics file contains one value for 8 worker thread. and one for 32 worker threads. 
+
+
+
+
+

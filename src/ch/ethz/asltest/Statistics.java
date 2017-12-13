@@ -1,10 +1,10 @@
 package ch.ethz.asltest;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by Simon on 27.10.17.
+ * Stores the statistics
  */
 public class Statistics {
     public static String fileName = "statistics.txt";

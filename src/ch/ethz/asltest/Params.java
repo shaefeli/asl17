@@ -5,6 +5,7 @@ import java.util.Set;
 
 /**
  * Created by Simon on 06.10.17.
+ * Parameters to run the middleware
  */
 public class Params {
     public static final boolean verbose = false;

@@ -2,6 +2,7 @@ package ch.ethz.asltest;
 
 /**
  * Created by simon on 21.10.17.
+ * The request types
  */
 public class RequestType {
     public static int SET = 1;

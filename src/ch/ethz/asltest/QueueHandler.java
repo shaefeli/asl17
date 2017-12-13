@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by Simon on 06.10.17.
+ * The requests queue
  */
 public class QueueHandler {
     public ThreadPoolExecutor workerThreadPool;
