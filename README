@@ -1,3 +1,5 @@
+Project at ETH Zürich, consisting of measuring performances of a distributed system consisting of 1 to 3 servers, 1 to 2 middlewares and a variable number of clients.  
+Clients were simulated using memtier (https://github.com/RedisLabs/memtier_benchmark), servers were deployed using memcached (https://memcached.org/) and the middleware was custom python code.
 #######################
 ###General Structure###
 #######################
